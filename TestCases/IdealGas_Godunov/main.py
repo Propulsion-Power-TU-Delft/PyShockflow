@@ -5,7 +5,7 @@ from PyShockTube.shock_tube import ShockTube
 """
 INPUT PARAMETERS FOR THE SHOCK-TUBE PROBLEM
 """
-LENGTH = 1
+LENGTH = 1                             
 NX = 100
 TIME_MAX = 2.0
 RHOL, RHOR = 1.0, 0.125

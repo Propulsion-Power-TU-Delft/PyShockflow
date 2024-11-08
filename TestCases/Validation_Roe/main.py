@@ -35,12 +35,12 @@ for key in initialCond.keys():
     RHOL, RHOR = inCond[0], inCond[1]
     UL, UR = inCond[2], inCond[3]
     approxSpeed = np.sqrt(1.4*np.max([PL, PR])/np.min([RHOL, RHOR]))  # brutal approximation max eigenvalue
-    CFLmax = 0.5  # conservative CFL
+    CFLmax = 0.5
     dtMax = CFLmax* dx / approxSpeed
     nt = int(TIME_MAX/dtMax)
     t = np.linspace(0, TIME_MAX, nt)
 
-    #driver
+    #solution driver
     tube = ShockTube(x, t, FLUID, FLUID_MODEL, FLUID_GAMMA)
     inCondDict = {'Density': np.array([RHOL, RHOR]), 'Velocity': np.array([UL, UR]), 'Pressure': np.array([PL, PR])}
     tube.InstantiateSolutionArrays()
@@ -50,9 +50,6 @@ for key in initialCond.keys():
 
     tube.SolveSystem(flux_method=NUMERICAL_SCHEME)
     tube.SaveSolution(folder_name='solutions', file_name=key)
-
-    # tube.ShowAnimation()
-
 
 
 

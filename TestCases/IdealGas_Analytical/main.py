@@ -10,14 +10,14 @@ initialCond = {'Test1': [1.0, 0.125, 0.0, 0.0, 1.0, 0.1],
                'Test4': [1.0, 1.0, 0.0, 0.0, 0.01, 100.0],
                'Test5': [5.99924, 5.99242, 19.5975, -6.19633, 460.894, 46.0950]}
 
-nt = 20
+nt = 20  # number of time instants on which to compute the solutions
 timeVectors = {'Test1': np.linspace(0, 0.25, nt),
                'Test2': np.linspace(0, 0.15, nt),
                'Test3': np.linspace(0, 0.012, nt),
                'Test4': np.linspace(0, 0.035, nt),
                'Test5': np.linspace(0, 0.035, nt)}
 
-nx = 250
+nx = 250  # number of points along x
 x = np.linspace(-0.5, 0.5, nx)
 
 for key in initialCond.keys():
