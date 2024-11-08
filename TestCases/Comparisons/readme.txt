@@ -1,1 +1,0 @@
-Validate the Godunov scheme by comparing the results of academic test-cases with their analytical Riemann solution.
