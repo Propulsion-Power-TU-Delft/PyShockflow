@@ -14,6 +14,8 @@ TIME_MAX = 0.00275
 CFLmax = 0.85  # conservative CFL
 FLUID = 'co2'
 FLUID_MODEL = 'real'
+NUMERICAL_SCHEME = 'roe'
+BOUNDARY_CONDITIONS = 'reflective'
 
 
 """ 
@@ -31,9 +33,9 @@ inCondDict = {'Density': np.array([RHOL, RHOR]), 'Velocity': np.array([UL, UR]),
 tube.InstantiateSolutionArrays()
 tube.InstantiateSolutionArraysConservatives()
 tube.InitialConditionsLeftRight(inCondDict)
-tube.SetBoundaryConditions('reflective', 0)
+tube.SetBoundaryConditions(BOUNDARY_CONDITIONS, 0)
 
-tube.SolveSystem(flux_method='Roe')
+tube.SolveSystem(flux_method=NUMERICAL_SCHEME)
 tube.SaveSolution(folder_name='solutions', file_name='co2_entropyfix_%i' %NX)
 tube.ShowAnimation()
 

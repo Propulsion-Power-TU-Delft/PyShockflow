@@ -10,6 +10,8 @@ NX = 250
 FLUID = 'air'
 FLUID_MODEL = 'ideal'
 FLUID_GAMMA = 1.4
+NUMERICAL_SCHEME = 'godunov'
+BOUNDARY_CONDITIONS = 'reflective'
 
 # Page 129 of Riemann Solvers and numerical methods for fluid dynamics by Toro et al.
 initialCond = {'Test1': [1.0, 0.125, 0.0, 0.0, 1.0, 0.1],
@@ -44,9 +46,9 @@ for key in initialCond.keys():
     tube.InstantiateSolutionArrays()
     tube.InstantiateSolutionArraysConservatives()
     tube.InitialConditionsLeftRight(inCondDict)
-    tube.SetBoundaryConditions('reflective', 0)
+    tube.SetBoundaryConditions(BOUNDARY_CONDITIONS, 0)
 
-    tube.SolveSystem(flux_method='Godunov')
+    tube.SolveSystem(flux_method=NUMERICAL_SCHEME)
     tube.SaveSolution(folder_name='solutions', file_name=key)
 
     # tube.ShowAnimation()

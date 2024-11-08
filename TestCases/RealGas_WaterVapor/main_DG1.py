@@ -18,6 +18,8 @@ TIME_MAX = 0.15*LENGTH*(Rhocr/Pcr)**(0.5)
 CFLmax = 0.95  # conservative CFL
 FLUID = 'water'
 FLUID_MODEL = 'real'
+NUMERICAL_SCHEME = 'roe'
+BOUNDARY_CONDITIONS = 'reflective'
 
 
 """ 
@@ -35,9 +37,8 @@ inCondDict = {'Density': np.array([RHOL, RHOR]), 'Velocity': np.array([UL, UR]),
 tube.InstantiateSolutionArrays()
 tube.InstantiateSolutionArraysConservatives()
 tube.InitialConditionsLeftRight(inCondDict)
-tube.SetBoundaryConditions('reflective', 0)
-
-tube.SolveSystem(flux_method='Roe')
+tube.SetBoundaryConditions(BOUNDARY_CONDITIONS, 0)
+tube.SolveSystem(flux_method=NUMERICAL_SCHEME)
 tube.SaveSolution(folder_name='solutions', file_name='DG1')
 # tube.ShowAnimation()
 
