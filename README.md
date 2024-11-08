@@ -1,17 +1,21 @@
-# README #
-
-This README would normally document whatever steps are necessary to get your application up and running.
+# PyShockTube #
 
 ### What is this repository for? ###
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+* Resolution of shock tube problems for both ideal and real gases.
+* Learning of numerical flux details, effects and implementation.
+* Implementation and testing of new numerical schemes to solve the 1D Euler Equations.
+
 
 ### How do I get set up? ###
 
-* Summary of set up
-* Configuration
+* Download a working version of Python and Conda on your system
+
+* Create a new environment with Conda
+```bash
+conda create --name pyshock
+```
+
 * Dependencies
 * Database configuration
 * How to run tests
