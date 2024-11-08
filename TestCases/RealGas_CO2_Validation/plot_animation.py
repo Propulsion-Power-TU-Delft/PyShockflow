@@ -1,12 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
-from NumericalCodes.riemann_problem import RiemannProblem
-from NumericalCodes.shock_tube import ShockTube
+from PyShockTube.riemann_problem import RiemannProblem
+from PyShockTube.shock_tube import ShockTube
 import os
 
 
-solFile = "solutions/co2_250.pik"
+solFile = "solutions/co2_entropyfix_500.pik"
 outFolder = 'Pictures'
 os.makedirs(outFolder, exist_ok=True)
 

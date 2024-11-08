@@ -1,12 +1,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
-from NumericalCodes.riemann_problem import RiemannProblem
-from NumericalCodes.shock_tube import ShockTube
+from PyShockTube.riemann_problem import RiemannProblem
+from PyShockTube.shock_tube import ShockTube
 import os
-from Utils.styles import *
 
-solFile = "solutions/co2_500.pik"
+solFile = "solutions/co2_noentropyfix_500.pik"
 solFile_fix = "solutions/co2_entropyfix_500.pik"
 outFolder = 'Pictures'
 os.makedirs(outFolder, exist_ok=True)
@@ -41,7 +40,7 @@ ax[2].set_title(r'$u \ \rm{[m/s]}$')
 for row in ax:
     row.set_xlabel(r'$x \ \rm{[m]}$')
     row.grid(alpha=.3)
-fig.legend(loc='lower center', bbox_to_anchor=(0.5, -0.1), ncol=3)
+fig.legend(loc='lower center', bbox_to_anchor=(0.5, -0.05), ncol=3)
 
 plt.savefig(outFolder + '/co2.pdf', bbox_inches='tight')
 
