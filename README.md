@@ -64,7 +64,7 @@ The following picture reports comparison between the reference data obtained wit
 ##### CO2 with real gas effects #####
 Test case for real gas effects documented in "A Hybrid Real/Ideal Gas Mixture Computational Framework to Capture Wave Propagation in Liquid Rocket Combustion Chamber Conditions" by D'Alessandro et al.
 The following picture reports comparison between the reference data from the article, and two simulations run with the
-Roe's generalized scheme for real gas, with Entropy fix.
+Roe's generalized scheme for real gas, with and without Entropy fix.
 ![Description of image](images/co2_validation.png)
 
 ### Contribution guidelines ###
