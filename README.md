@@ -46,7 +46,7 @@ on windows based machines. It should be quite easy to fix. With time the code wi
 Test case for real gas effects documented in "A Hybrid Real/Ideal Gas Mixture Computational Framework to Capture Wave Propagation in Liquid Rocket Combustion Chamber Conditions" by D'Alessandro et al.
 The following picture reports comparison between the reference data from the article, and two simulations run with the
 Roe's generalized scheme for real gas, with Entropy fix.
-![Description of image](Images/co2.png)
+![Description of image](Images/co2_validation.png)
 
 ### Contribution guidelines ###
 
