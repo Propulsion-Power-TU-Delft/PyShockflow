@@ -108,7 +108,7 @@ Thumbs.db
 *.png
 *pickle*
 *pickle
-*pik
+*.pik
 *.su2
 *.cfg
 *.pvsm
