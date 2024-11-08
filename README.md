@@ -40,6 +40,14 @@ The input parameters are specified inside every main.py file, and should be quit
 * The code has been written for Mac OS systems, so there is the chance for some path-related commands to not run correctly
 on windows based machines. It should be quite easy to fix. With time the code will be made more universal.
 
+### Results Example ###
+
+##### CO2 with real gas effects #####
+Test case for real gas effects documented in "A Hybrid Real/Ideal Gas Mixture Computational Framework to Capture Wave Propagation in Liquid Rocket Combustion Chamber Conditions" by D'Alessandro et al.
+The following picture reports comparison between the reference data from the article, and two simulations run with the
+Roe's generalized scheme for real gas, with Entropy fix.
+![Description of image](Images/co2.png)
+
 ### Contribution guidelines ###
 
 * Validate the modifications by means of detailed test cases
