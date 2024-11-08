@@ -1,0 +1,2 @@
+Validate the Roe scheme by comparing the results of academic test-cases with their analytical Riemann solution.
+The cfl used is very low because some tests are numerically very severe (2 and 5). The reference test case is the number 1 (Sod's test case)
