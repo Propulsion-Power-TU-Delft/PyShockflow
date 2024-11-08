@@ -42,6 +42,11 @@ on windows based machines. It should be quite easy to fix. With time the code wi
 
 ### Results Example ###
 
+##### Godunov Scheme for ideal gas (air) #####
+Test case for ideal gas (air) documented in book "Riemann Solvers and Numerical Methods for Fluid Dynamics" by Toro.
+The following picture reports comparison between the reference data obtained with the analytical riemann solver, and simulation results obtained with the Godunov scheme for ideal gas.
+![Description of image](images/godunov_idealgas.png)
+
 ##### CO2 with real gas effects #####
 Test case for real gas effects documented in "A Hybrid Real/Ideal Gas Mixture Computational Framework to Capture Wave Propagation in Liquid Rocket Combustion Chamber Conditions" by D'Alessandro et al.
 The following picture reports comparison between the reference data from the article, and two simulations run with the
