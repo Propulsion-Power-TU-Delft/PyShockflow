@@ -35,7 +35,7 @@ python main.py
 ```
 
 - The input parameters are specified inside every `main.py` file, and should be quite easy to modify. The legend for the input variables is the following (SI units):
-```bash
+```python
 LENGTH: length of the tube
 NX: number of points for the space-discretization
 ```
