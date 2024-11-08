@@ -1,10 +1,15 @@
 # PyShockTube #
 
+
+
 ### What is this repository for? ###
 
 * Resolution of shock tube problems for both ideal and real gases.
 * Learning of numerical flux details, effects and implementation.
 * Implementation and testing of new numerical schemes to solve the 1D Euler Equations.
+
+
+
 
 
 ### How do I get set up? ###
@@ -53,6 +58,10 @@ PL, PR: initial left and right values of pressure
 ### Notes ###
 * The code has been written for Mac OS systems, so there is the chance for some path-related commands to not run correctly
 on windows based machines. It should be quite easy to fix. With time the code will be made more universal.
+
+
+
+
 
 ### Results Example ###
 

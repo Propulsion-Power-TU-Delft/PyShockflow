@@ -101,7 +101,7 @@ class MusclHancock:
         """
         Compute the flux at the interface making use of Roe Solver
         """
-        roe = RoeScheme(self.rhoL, self.rhoR, self.uL, self.uR, self.pL, self.pR)
+        roe = RoeScheme_Base(self.rhoL, self.rhoR, self.uL, self.uR, self.pL, self.pR)
         roe.ComputeAveragedVariables()
         roe.ComputeAveragedEigenvalues()
         roe.ComputeAveragedEigenvectors()
