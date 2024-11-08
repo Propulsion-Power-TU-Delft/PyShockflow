@@ -1,13 +1,13 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from NumericalCodes.shock_tube import ShockTube
+from PyShockTube.shock_tube import ShockTube
 import CoolProp.CoolProp as CP
 
 """
 INPUT PARAMETERS FOR THE SHOCK-TUBE PROBLEM
 """
 LENGTH = 1
-NX = 350
+NX = 250
 UL, UR = 0.0, 0.0
 Rhocr = 322
 RHOL = 1.818*Rhocr
@@ -15,7 +15,7 @@ RHOR = 0.275*Rhocr
 Pcr = 22.064e6
 PL, PR = 3*Pcr, 0.575*Pcr
 TIME_MAX = 0.15*LENGTH*(Rhocr/Pcr)**(0.5)
-CFLmax = 0.5  # conservative CFL
+CFLmax = 0.95  # conservative CFL
 FLUID = 'water'
 FLUID_MODEL = 'real'
 
