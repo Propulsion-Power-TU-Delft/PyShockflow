@@ -2,11 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import pickle
-from NumericalCodes.riemann_problem import RiemannProblem
-from NumericalCodes.roe_scheme import RoeScheme_Base, RoeScheme_Generalized
-from NumericalCodes.muscl_hancock import MusclHancock
-from NumericalCodes.fluid import FluidIdeal, FluidReal
-from NumericalCodes.euler_functions import *
+from PyShockTube.riemann_problem import RiemannProblem
+from PyShockTube.roe_scheme import RoeScheme_Base, RoeScheme_Generalized
+from PyShockTube.muscl_hancock import MusclHancock
+from PyShockTube.fluid import FluidIdeal, FluidReal
+from PyShockTube.euler_functions import *
 
 
 

@@ -1,4 +1,4 @@
-from NumericalCodes.fluid import FluidIdeal
+from PyShockTube.fluid import FluidIdeal
 import numpy as np
 
 def GetPrimitivesFromConservatives(u1, u2, u3, fluid):

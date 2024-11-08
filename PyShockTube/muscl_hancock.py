@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import os
 import pickle
 from numpy import sqrt
-from NumericalCodes.roe_scheme import RoeScheme_Base
+from PyShockTube.roe_scheme import RoeScheme_Base
 
 
 class MusclHancock:
