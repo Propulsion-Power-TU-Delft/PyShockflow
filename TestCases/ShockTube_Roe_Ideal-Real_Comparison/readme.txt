@@ -1,0 +1,2 @@
+Solve the 1D-Euler equations by means of the Roe first order scheme generalized to real gas. Reference to article:
+"A simple extension of Roe’s scheme for real gases", by Arabi et al., Journal of Computational Physics 2017

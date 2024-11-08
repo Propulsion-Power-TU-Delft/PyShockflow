@@ -1,0 +1,1 @@
+Solve the 1D-Euler equations by means of the weighted-average flux (WAF) scheme 

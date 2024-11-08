@@ -1,0 +1,1 @@
+Solve analytically the Riemann Problem for the Euler Equations, on a 1D domain initialized with left and right states
