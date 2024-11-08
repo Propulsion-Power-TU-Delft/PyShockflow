@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from NumericalCodes.shock_tube import ShockTube
+from PyShockTube.shock_tube import ShockTube
 
 """
 INPUT PARAMETERS FOR THE SHOCK-TUBE PROBLEM
@@ -36,10 +36,8 @@ tube.InitialConditionsLeftRight(inCondDict)
 tube.SetBoundaryConditions('reflective', 0)
 
 tube.SolveSystem(flux_method='Godunov')
-# tube.SaveSolution(folder_name='solutions', file_name='SodsTest_transparent_tMax_%.1f' %TIME_MAX)
-
+tube.SaveSolution(folder_name='solutions', file_name='Godunov_tMax_%.1f' %TIME_MAX)
 tube.ShowAnimation()
-# tube.ShowContourAnimation()
 
 
 

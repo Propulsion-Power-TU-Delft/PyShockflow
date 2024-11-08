@@ -30,7 +30,7 @@ for key in initialCond.keys():
     riem.Solve()
     riem.ShowAnimation()
     riem.DrawSpaceTimePlot(folder_name='pictures', file_name=key)
-    riem.SaveSolution(folder_name='solutions_tmp', file_name=key)
+    riem.SaveSolution(folder_name='solutions', file_name=key)
     riem.PlotSolution(-1, folder_name='pictures', file_name=key)
 
 plt.show()
