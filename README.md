@@ -41,8 +41,11 @@ NX: number of points for the space-discretization
 FLUID: name of the fluid
 FLUID_MODEL: ideal or real
 FLUID_GAMMA: cp/cv ratio (needed if ideal gas mode is selected) 
-NUMERICAL_SCHEME = Roe, Godunov, WAF, MUSCL-Hancock
-BOUNDARY_CONDITIONS = reflective, transparent or periodic
+NUMERICAL_SCHEME: Roe, Godunov, WAF, MUSCL-Hancock
+BOUNDARY_CONDITIONS: reflective, transparent or periodic
+RHOL, RHOR: initial left and right values of density
+UL, UR: initial left and right values of velocity
+PL, PR: initial left and right values of pressure
 ```
 
 
