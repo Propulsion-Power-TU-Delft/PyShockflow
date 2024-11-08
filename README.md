@@ -34,10 +34,10 @@ pip install .
 python main.py
 ```
 
-The input parameters are specified inside every main.py file, and should be quite easy to modify. The legend for the input variables is the following (SI units):
+- The input parameters are specified inside every `main.py` file, and should be quite easy to modify. The legend for the input variables is the following (SI units):
 
-LENGTH: length of the tube
-NX: number of points for the space-discretization
+  - LENGTH: length of the tube
+  - NX: number of points for the space-discretization
 
 ### Notes ###
 * The code has been written for Mac OS systems, so there is the chance for some path-related commands to not run correctly
