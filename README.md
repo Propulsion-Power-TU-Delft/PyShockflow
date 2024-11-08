@@ -30,6 +30,7 @@ pip install .
 ```
 
 * Navigate to the test cases folder, and run any of the main python files in the folders
+
 The input parameters are specified inside every main.py file, and should be quite easy to modify them as needed
 
 ### Contribution guidelines ###
