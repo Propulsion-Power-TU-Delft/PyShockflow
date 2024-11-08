@@ -11,11 +11,11 @@
 
 * git clone the present folder
 
-* Download a working version of Python and Conda on your system
+* Download Conda on your system
 
-* Create a new environment with Conda (e.g. pyshock)
+* Create a new environment with Conda (e.g. pyshock), with the following python version.
 ```bash
-conda create --name pyshock
+conda create --name pyshock python=3.12.2
 ```
 
 * Activate the new environment
