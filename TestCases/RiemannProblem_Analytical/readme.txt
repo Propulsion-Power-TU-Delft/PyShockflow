@@ -1,2 +1,2 @@
-Analytical solutions of the Riemann Problem for the Euler Equations, on a 1D domain initialized with left and right states.
+Analytical solutions (ideal gas) of the Riemann Problem for the Euler Equations, on a 1D domain initialized with left and right states.
 The 5 test cases used are detailed in the book by Toro "Riemann Solvers and Numerical Methods for Fluid Dynamics".
