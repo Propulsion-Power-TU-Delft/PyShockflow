@@ -1,12 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
-from NumericalCodes.riemann_problem import RiemannProblem
-from NumericalCodes.shock_tube import ShockTube
+from PyShockTube.riemann_problem import RiemannProblem
+from PyShockTube.shock_tube import ShockTube
 import os
 
 
-refFiles = ["../RiemannProblem_Analytical/solutions/Test%i.pik" %i for i in range(1,6)]
+refFiles = ["../IdealGas_Analytical/solutions/Test%i.pik" %i for i in range(1,6)]
 godFiles = ["solutions/Test%i.pik" %i for i in range(1,6)]
 outFolder = 'pictures'
 os.makedirs(outFolder, exist_ok=True)

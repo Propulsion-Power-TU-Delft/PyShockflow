@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from NumericalCodes.shock_tube import ShockTube
+from PyShockTube.shock_tube import ShockTube
 
 """
 INPUT PARAMETERS FOR THE SHOCK-TUBE PROBLEM
@@ -33,7 +33,7 @@ for key in initialCond.keys():
     RHOL, RHOR = inCond[0], inCond[1]
     UL, UR = inCond[2], inCond[3]
     approxSpeed = np.sqrt(1.4*np.max([PL, PR])/np.min([RHOL, RHOR]))  # brutal approximation max eigenvalue
-    CFLmax = 0.2  # conservative CFL
+    CFLmax = 0.1  # conservative CFL
     dtMax = CFLmax* dx / approxSpeed
     nt = int(TIME_MAX/dtMax)
     t = np.linspace(0, TIME_MAX, nt)

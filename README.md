@@ -34,7 +34,7 @@ pip install .
 python main.py
 ```
 
-The input parameters are specified inside every main.py file, and should be quite easy to modify them as needed.
+The input parameters are specified inside every main.py file, and should be quite easy to modify.
 
 ### Notes ###
 * The code has been written for Mac OS systems, so there is the chance for some path-related commands to not run correctly
