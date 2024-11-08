@@ -30,8 +30,15 @@ pip install .
 ```
 
 * Navigate to the test cases folder, and run any of the main python files in the folders
+```bash
+python main.py
+```
 
-The input parameters are specified inside every main.py file, and should be quite easy to modify them as needed
+The input parameters are specified inside every main.py file, and should be quite easy to modify them as needed.
+
+### Notes ###
+* The code has been written for Mac OS systems, so there is the chance for some path-related commands to not run correctly
+on windows based machines. It should be quite easy to fix. With time the code will be made more universal.
 
 ### Contribution guidelines ###
 
