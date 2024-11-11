@@ -40,17 +40,19 @@ python main.py
 ```
 
 - The input parameters are specified inside every `main.py` file, and should be quite easy to modify. The legend for the input variables is the following (SI units):
-```
+```python
 LENGTH: length of the tube
 NX: number of points for the space-discretization
 FLUID: name of the fluid
 FLUID_MODEL: ideal or real
 FLUID_GAMMA: cp/cv ratio (needed if ideal gas mode is selected) 
+CFL_MAX: approximate Max CFL condition to respect at first time-step
 NUMERICAL_SCHEME: Roe, Godunov, WAF, MUSCL-Hancock
 BOUNDARY_CONDITIONS: reflective, transparent or periodic
 RHOL, RHOR: initial left and right values of density
 UL, UR: initial left and right values of velocity
 PL, PR: initial left and right values of pressure
+HIGH_ORDER: True or False to enable MUSCL reconstruction with Van Albada Limiter
 ```
 
 
