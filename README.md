@@ -83,7 +83,7 @@ Zooming in in the critical areas shows the time-step sensitivity.
 ![Description of image](images/high_order_zoom.png)
 
 ##### CO2 with real gas effects #####
-Test case for real gas effects documented in "A Hybrid Real/Ideal Gas Mixture Computational Framework to Capture Wave Propagation in Liquid Rocket Combustion Chamber Conditions" by D'Alessandro et al. The generalised Roe's scheme formulation has been taken from [2].
+Test case for real gas effects documented in [4]. The generalised Roe's scheme formulation has been taken from [2].
 The following picture reports comparison between the reference data from the article, and two simulations run with the
 Roe's generalized scheme for real gas, with and without Entropy fix.
 ![Description of image](images/co2_validation.png)
@@ -106,3 +106,4 @@ Roe's generalized scheme for real gas, with and without Entropy fix.
 
 [3] Blazek, Jiri. Computational fluid dynamics: principles and applications. Butterworth-Heinemann, 2015.
 
+[4] D’Alessandro, Simone, Marco Pizzarelli, and Francesco Nasuti. "A hybrid real/ideal gas mixture computational framework to capture wave propagation in liquid rocket combustion chamber conditions." Aerospace 8.9 (2021): 250.
