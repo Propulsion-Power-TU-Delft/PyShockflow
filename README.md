@@ -91,8 +91,8 @@ Roe's generalized scheme for real gas, with and without Entropy fix.
 
 ### Authors and contacts ###
 
-* ####Francesco Neri####, TU Delft, `f.neri@tudelft.nl`
-* ####Matteo Pini####, TU Delft, `m.pini@tudelft.nl`
+- **Francesco Neri**, TU Delft, `f.neri@tudelft.nl`
+- **Matteo Pini**, TU Delft, `m.pini@tudelft.nl`
 
 ### References ###
 
