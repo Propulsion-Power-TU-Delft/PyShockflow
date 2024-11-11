@@ -12,7 +12,6 @@ FLUID_MODEL = 'ideal'
 FLUID_GAMMA = 1.4
 NUMERICAL_SCHEME = 'roe'
 BOUNDARY_CONDITIONS = 'reflective'
-HIGH_ORDER = False
 
 # Page 129 of Riemann Solvers and numerical methods for fluid dynamics by Toro et al.
 initialCond = {'Test1': [1.0, 0.125, 0.0, 0.0, 1.0, 0.1],
@@ -36,7 +35,7 @@ for key in initialCond.keys():
     RHOL, RHOR = inCond[0], inCond[1]
     UL, UR = inCond[2], inCond[3]
     approxSpeed = np.sqrt(1.4*np.max([PL, PR])/np.min([RHOL, RHOR]))  # brutal approximation max eigenvalue
-    CFLmax = 0.15
+    CFLmax = 0.5
     dtMax = CFLmax* dx / approxSpeed
     nt = int(TIME_MAX/dtMax)
     t = np.linspace(0, TIME_MAX, nt)

@@ -244,7 +244,7 @@ class ShockTube:
         self.solution['Energy'][-1, iTime] = self.solution['Energy'][1, iTime]
 
 
-    def SolveSystem(self, flux_method, high_order):
+    def SolveSystem(self, flux_method, high_order=False):
         """
         Solve the equations explicitly in time using a certain flux_method (`Godunov`, `Roe`, `WAF`)
         """
@@ -279,7 +279,7 @@ class ShockTube:
         """
         # flow reconstruction
         if (high_order and il>2 and ir<self.nNodesHalo-2):
-            rhoL, uL, pL, rhoR, uR, pR = self.MUSCL_VanLeer(il, ir, it)
+            rhoL, uL, pL, rhoR, uR, pR = self.MUSCL_VanAlbada_Reconstruction(il, ir, it)
         else:
             rhoL = self.solution['Density'][il, it]
             rhoR = self.solution['Density'][ir, it]
@@ -360,9 +360,10 @@ class ShockTube:
         
         return flux
 
-    def MUSCL_VanLeer(self, il, ir, it):
-        eps = 1e-12
-
+    def MUSCL_VanAlbada_Reconstruction(self, il, ir, it):
+        """
+        MUSCL approach with Van Albada limiter. Formulation taken from pag. 110 of "Computational Fluid Dynamics book, by Blazek", where kappa=0
+        """
         # states left, left minus 1, right, right plus one
         U_l = np.array([self.solution['Density'][il, it], self.solution['Velocity'][il, it], self.solution['Pressure'][il, it]])
         U_lm = np.array([self.solution['Density'][il-1, it], self.solution['Velocity'][il-1, it], self.solution['Pressure'][il-1, it]])
