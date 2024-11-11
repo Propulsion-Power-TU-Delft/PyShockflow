@@ -4,55 +4,51 @@
 
 ### What is this repository for? ###
 
-* Resolution of shock tube problems for both ideal and real gases.
+* Resolution of shock tube problems for ideal and real gases.
 * Learning of numerical flux details, effects and implementation.
 * Implementation and testing of new numerical schemes to solve the 1D Euler Equations.
-
-
-
+* Study of non-classical gas dynamics effects.
 
 
 ### How do I get set up? ###
 
-* git clone the present folder
+* Git clone the present folder in your system
 
-* Download Conda on your system
-
-* Create a new environment with Conda (e.g. pyshock), with the following python version.
+* Create a new environment called pyshock with Conda (or venv), with the following python version:
 ```bash
 conda create --name pyshock python=3.12.2
 ```
 
-* Activate the new environment
+* Activate the new environment:
 ```bash
 conda activate pyshock
 ```
 
-* Download and install the needed python packages
+* Navigate to the package and and install it:
 ```bash
 cd pyshocktube
 pip install .
 ```
 
-* Navigate to the test cases folder, and run any of the main python files in the folders
+* Navigate to the test cases folder (or create one), and run the main.py file:
 ```bash
 python main.py
 ```
 
-- The input parameters are specified inside every `main.py` file, and should be quite easy to comprehend and modify. The legend for the input variables is the following (SI units):
+* The input parameters are specified inside every `main.py` file, and should be quite easy to comprehend and modify. The legend is the following (SI units):
 ```python
-LENGTH: length of the tube
-NX: number of points for the space-discretization
-FLUID: name of the fluid
-FLUID_MODEL: ideal or real
-FLUID_GAMMA: cp/cv ratio (needed if ideal gas mode is selected) 
-CFL_MAX: approximate Max CFL condition to respect at first time-step
-NUMERICAL_SCHEME: Roe, Godunov, WAF, MUSCL-Hancock
-BOUNDARY_CONDITIONS: reflective, transparent or periodic
-RHOL, RHOR: initial left and right values of density
-UL, UR: initial left and right values of velocity
-PL, PR: initial left and right values of pressure
-HIGH_ORDER: True or False to enable MUSCL reconstruction with Van Albada Limiter
+LENGTH: length of the tube.
+NX: number of points for the space-discretization.
+FLUID: name of the fluid, according to coolprop nomenclature.
+FLUID_MODEL: ideal or real.
+FLUID_GAMMA: cp/cv ratio (needed if ideal gas mode is selected).
+CFL_MAX: approximate max CFL condition to respect at the first time-step.
+NUMERICAL_SCHEME: Roe, Godunov, WAF, MUSCL-Hancock.
+BOUNDARY_CONDITIONS: reflective, transparent or periodic.
+RHOL, RHOR: initial left and right values of density.
+UL, UR: initial left and right values of velocity.
+PL, PR: initial left and right values of pressure.
+HIGH_ORDER: True or False to enable MUSCL reconstruction with Van Albada Limiter.
 ```
 
 
@@ -68,18 +64,18 @@ on windows based machines. It should be quite easy to fix. With time the code wi
 ### Results Example ###
 
 ##### Godunov Scheme for ideal gas (air) #####
-Test case for ideal gas (air) documented in [1].
-The following picture reports comparison between the reference data obtained with the analytical riemann solver, and simulation results obtained with the Godunov scheme for ideal gas.
+Test case for ideal gas (air), documented in [1].
+The following picture reports the comparison between the reference data obtained with the analytical Riemann Solver, and the simulation results obtained with the Godunov scheme for ideal gas:
 ![Description of image](images/godunov_idealgas.png)
 
 ##### Roe Scheme for ideal gas (air) with High-Order Reconstruction #####
-Test case for ideal gas (air) documented in [1], solved with Roe's scheme and MUSCL reconstruction + Van Albada limiter [3].
+Test case for ideal gas (air) documented in [1], solved with Roe's scheme and MUSCL reconstruction + Van Albada limiter described in [3].
 The following picture reports the comparison between the solutions with and without high-order reconstruction.
 ![Description of image](images/high_order_comparison.png)
 
-Given the sensitivity of high-order reconstruction to the simulation time-step, the following picture reports the comparison between the reference data obtained with the analytical riemann solver, and simulation results obtained with different time-steps.
+Given the sensitivity of high-order reconstruction to the simulation time-step, the following picture reports the comparison between results obtained with different CFL numbers:
 ![Description of image](images/high_order.png)
-Zooming in in the critical areas shows the time-step sensitivity.
+Zooming in, the critical areas show the time-step effects:
 ![Description of image](images/high_order_zoom.png)
 
 ##### CO2 with real gas effects #####
