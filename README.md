@@ -72,7 +72,10 @@ The following picture reports comparison between the reference data obtained wit
 
 ##### Roe Scheme for ideal gas (air) with High-Order Reconstruction #####
 Test case for ideal gas (air) documented in book "Riemann Solvers and Numerical Methods for Fluid Dynamics" by Toro, solved with Roe's scheme and MUSCL reconstruction + Van Albada limiter.
-The following pictures report the comparison between the reference data obtained with the analytical riemann solver, and simulation results obtained with different time-steps, highlighting the dependency of high-order schemes from the CFL used. The second picture is a zoom in the critical areas of the first one.
+The following picture reports the comparison between the solutions with and without high-order reconstruction.
+![Description of image](images/high_order_comparison.png)
+
+Given the sensitivity of high-order reconstruction to the simulation time-step, the following pictures report the comparison between the reference data obtained with the analytical riemann solver, and simulation results obtained with different time-steps, highlighting the dependency of high-order schemes from the CFL used. The second picture is a zoom in the critical areas of the first one.
 ![Description of image](images/high_order.png)
 ![Description of image](images/high_order_zoom.png)
 
