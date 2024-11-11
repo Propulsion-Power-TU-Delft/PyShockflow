@@ -6,8 +6,8 @@ from PyShockTube.shock_tube import ShockTube
 INPUT PARAMETERS FOR THE SHOCK-TUBE PROBLEM
 """
 LENGTH = 1
-NX = 100
-TIME_MAX = 2  # to simulate two reflections
+NX = 200
+TIME_MAX = 0.25  # to simulate two reflections
 RHOL, RHOR = 1.0, 0.125
 UL, UR = 0.0, 0.0
 PL, PR = 1.0, 0.1

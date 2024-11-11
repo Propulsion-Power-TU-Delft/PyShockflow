@@ -273,7 +273,7 @@ class ShockTube:
             self.SetBoundaryConditions(self.BCtype, it)
 
 
-    def ComputeFluxVector(self, il, ir, it, flux_method):
+    def ComputeFluxVector(self, il, ir, it, flux_method, reconstruction='Van Albada'):
         """
         Compute the flux vector at the interface between grid points `il` and `ir`, using a certain `flux_method`
         """
@@ -317,6 +317,11 @@ class ShockTube:
             flux = EulerFluxFromConservatives(u1AVG, u2AVG, u3AVG, self.fluid)
         
         elif flux_method.lower()=='roe':
+            # reconstruction
+            if (reconstruction is not False and il>1 and ir<self.nNodesHalo-2):
+                rhoL, uL, pL, rhoR, uR, pR = self.MUSCL_VanAlbada_Recon(il, ir, it)
+            else:
+                pass
             if self.fluid_model=='ideal':
                 roe = RoeScheme_Base(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
                 roe.ComputeAveragedVariables()
@@ -354,6 +359,32 @@ class ShockTube:
             raise ValueError('Unknown flux method')
         
         return flux
+
+    def MUSCL_VanAlbada_Recon(self, il, ir, it):
+        eps = 1e-12
+
+        # states left, left minus 1, right, right plus one
+        U_l = np.array([self.solution['Density'][il, it], self.solution['Velocity'][il, it], self.solution['Pressure'][il, it]])
+        U_lm = np.array([self.solution['Density'][il-1, it], self.solution['Velocity'][il-1, it], self.solution['Pressure'][il-1, it]])
+        U_r = np.array([self.solution['Density'][ir, it], self.solution['Velocity'][ir, it], self.solution['Pressure'][ir, it]])
+        U_rp = np.array([self.solution['Density'][ir+1, it], self.solution['Velocity'][ir+1, it], self.solution['Pressure'][ir+1, it]])
+
+        # limited slopes
+        sl = (2*(U_l-U_lm)*(U_r-U_l)+eps) / ((U_l-U_lm)**2+(U_r-U_l)**2 + eps)
+        sr = (2*(U_r-U_l)*(U_rp-U_r)+eps) / ((U_r-U_l)**2+(U_rp-U_r)**2 + eps)
+
+        # reconstruct left and right states
+        U_l_rec = U_l+sl/4*((1-sl/3)*(U_l-U_lm)+(1+sl/3)*(U_r-U_l))
+        U_r_rec = U_r+sr/4*((1-sr/3)*(U_rp-U_r)+(1+sr/3)*(U_r-U_l))
+
+        return U_l_rec[0], U_l_rec[1], U_l_rec[2], U_r_rec[0], U_r_rec[1], U_r_rec[2]
+
+
+
+
+
+
+
 
     def ShowAnimation(self):
         """
