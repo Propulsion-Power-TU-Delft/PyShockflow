@@ -16,7 +16,7 @@ BOUNDARY_CONDITIONS = 'reflective'
 FLUID = 'air'
 FLUID_MODEL = 'ideal'
 FLUID_GAMMA = 1.4
-CFL_MAX = [0.01, 0.05, 0.10, 0.2, 0.5]
+CFL_MAX = [0.01, 0.05, 0.10, 0.2]
 HIGH_ORDER = True
 
 

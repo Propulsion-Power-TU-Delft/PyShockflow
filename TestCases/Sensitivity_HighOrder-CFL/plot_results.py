@@ -7,7 +7,7 @@ import os
 
 
 refFile = "../IdealGas_Analytical/solutions/Test1.pik"
-cfls = [0.01, 0.05, 0.1, 0.20, 0.50]
+cfls = [0.01, 0.05, 0.1, 0.20]
 roeFiles = ["solutions/SodsTest_%.2f.pik" %i for i in cfls]
 outFolder = 'pictures'
 os.makedirs(outFolder, exist_ok=True)
