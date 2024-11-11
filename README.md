@@ -70,6 +70,12 @@ Test case for ideal gas (air) documented in book "Riemann Solvers and Numerical 
 The following picture reports comparison between the reference data obtained with the analytical riemann solver, and simulation results obtained with the Godunov scheme for ideal gas.
 ![Description of image](images/godunov_idealgas.png)
 
+##### Roe Scheme for ideal gas (air) with High-Order Reconstruction #####
+Test case for ideal gas (air) documented in book "Riemann Solvers and Numerical Methods for Fluid Dynamics" by Toro, solved with Roe's scheme and MUSCL reconstruction + Van Albada limiter.
+The following pictures report the comparison between the reference data obtained with the analytical riemann solver, and simulation results obtained with different time-steps, highlighting the dependency of high-order schemes from the CFL used. The second picture is a zoom in the critical areas of the first one.
+![Description of image](images/high_order.png)
+![Description of image](images/high_order_zoom.png)
+
 ##### CO2 with real gas effects #####
 Test case for real gas effects documented in "A Hybrid Real/Ideal Gas Mixture Computational Framework to Capture Wave Propagation in Liquid Rocket Combustion Chamber Conditions" by D'Alessandro et al.
 The following picture reports comparison between the reference data from the article, and two simulations run with the
