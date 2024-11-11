@@ -39,7 +39,7 @@ pip install .
 python main.py
 ```
 
-- The input parameters are specified inside every `main.py` file, and should be quite easy to modify. The legend for the input variables is the following (SI units):
+- The input parameters are specified inside every `main.py` file, and should be quite easy to comprehend and modify. The legend for the input variables is the following (SI units):
 ```python
 LENGTH: length of the tube
 NX: number of points for the space-discretization
@@ -68,12 +68,12 @@ on windows based machines. It should be quite easy to fix. With time the code wi
 ### Results Example ###
 
 ##### Godunov Scheme for ideal gas (air) #####
-Test case for ideal gas (air) documented in book "Riemann Solvers and Numerical Methods for Fluid Dynamics" by Toro.
+Test case for ideal gas (air) documented in [1].
 The following picture reports comparison between the reference data obtained with the analytical riemann solver, and simulation results obtained with the Godunov scheme for ideal gas.
 ![Description of image](images/godunov_idealgas.png)
 
 ##### Roe Scheme for ideal gas (air) with High-Order Reconstruction #####
-Test case for ideal gas (air) documented in book "Riemann Solvers and Numerical Methods for Fluid Dynamics" by Toro, solved with Roe's scheme and MUSCL reconstruction + Van Albada limiter.
+Test case for ideal gas (air) documented in [1], solved with Roe's scheme and MUSCL reconstruction + Van Albada limiter [3].
 The following picture reports the comparison between the solutions with and without high-order reconstruction.
 ![Description of image](images/high_order_comparison.png)
 
@@ -83,7 +83,7 @@ Zooming in in the critical areas shows the time-step sensitivity.
 ![Description of image](images/high_order_zoom.png)
 
 ##### CO2 with real gas effects #####
-Test case for real gas effects documented in "A Hybrid Real/Ideal Gas Mixture Computational Framework to Capture Wave Propagation in Liquid Rocket Combustion Chamber Conditions" by D'Alessandro et al.
+Test case for real gas effects documented in "A Hybrid Real/Ideal Gas Mixture Computational Framework to Capture Wave Propagation in Liquid Rocket Combustion Chamber Conditions" by D'Alessandro et al. The generalised Roe's scheme formulation has been taken from [2].
 The following picture reports comparison between the reference data from the article, and two simulations run with the
 Roe's generalized scheme for real gas, with and without Entropy fix.
 ![Description of image](images/co2_validation.png)
@@ -97,3 +97,12 @@ Roe's generalized scheme for real gas, with and without Entropy fix.
 
 * Francesco Neri, TU Delft
 * Matteo Pini, TU Delft
+
+### References ###
+
+[1] Toro, Eleuterio F. Riemann solvers and numerical methods for fluid dynamics: a practical introduction. Springer Science & Business Media, 2013.
+
+[2] Arabi, Sina, Jean-Yves Trépanier, and Ricardo Camarero. "A simple extension of Roe's scheme for real gases." Journal of Computational Physics 329 (2017): 16-28.
+
+[3] Blazek, Jiri. Computational fluid dynamics: principles and applications. Butterworth-Heinemann, 2015.
+
