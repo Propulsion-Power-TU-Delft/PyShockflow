@@ -57,6 +57,9 @@ HIGH_ORDER: True or False to enable MUSCL reconstruction with Van Albada Limiter
 * The code has been written for Mac OS systems, so there is the chance for some path-related commands to not run correctly
 on windows based machines. It should be quite easy to fix. With time the code will be made more universal.
 
+* The system of Euler equations is solved with the forward Euler explicit method (first-order in time). This means that the time-step must be accurately restricted below certain limits (case by case dependent), and a large number of iterations may be required to simulate a certain problem. The first thing to do when a simulation fails, is to try reducing the `CFL_MAX` input parameter. 
+
+In the future, implicit and multi-step temporal discretizations may be added to increase the flexibility of the solver.
 
 
 
