@@ -244,7 +244,7 @@ class ShockTube:
         self.solution['Energy'][-1, iTime] = self.solution['Energy'][1, iTime]
 
 
-    def SolveSystem(self, flux_method):
+    def SolveSystem(self, flux_method, high_order):
         """
         Solve the equations explicitly in time using a certain flux_method (`Godunov`, `Roe`, `WAF`)
         """
@@ -255,11 +255,11 @@ class ShockTube:
             print('Time step: %i of %i' %(it, self.nTime))
             for ix in range(1, self.nNodesHalo-1):
                 if ix==1: # only for the first node compute left and right fluxes
-                    fluxVec_left = self.ComputeFluxVector(ix-1, ix, it-1, flux_method)
-                    fluxVec_right = self.ComputeFluxVector(ix, ix+1, it-1, flux_method)
+                    fluxVec_left = self.ComputeFluxVector(ix-1, ix, it-1, flux_method, high_order)
+                    fluxVec_right = self.ComputeFluxVector(ix, ix+1, it-1, flux_method, high_order)
                 else:
                     fluxVec_left = fluxVec_right  # make use of the previously calculated flux (conservative approach)
-                    fluxVec_right = self.ComputeFluxVector(ix, ix+1, it-1, flux_method)
+                    fluxVec_right = self.ComputeFluxVector(ix, ix+1, it-1, flux_method, high_order)
 
                 fluxVec_net = fluxVec_left-fluxVec_right
                 
@@ -273,17 +273,22 @@ class ShockTube:
             self.SetBoundaryConditions(self.BCtype, it)
 
 
-    def ComputeFluxVector(self, il, ir, it, flux_method, reconstruction='Van Albada'):
+    def ComputeFluxVector(self, il, ir, it, flux_method, high_order):
         """
         Compute the flux vector at the interface between grid points `il` and `ir`, using a certain `flux_method`
         """
-        rhoL = self.solution['Density'][il, it]
-        rhoR = self.solution['Density'][ir, it]
-        uL = self.solution['Velocity'][il, it]
-        uR = self.solution['Velocity'][ir, it]
-        pL = self.solution['Pressure'][il, it]
-        pR = self.solution['Pressure'][ir, it]
+        # flow reconstruction
+        if (high_order and il>2 and ir<self.nNodesHalo-2):
+            rhoL, uL, pL, rhoR, uR, pR = self.MUSCL_VanLeer(il, ir, it)
+        else:
+            rhoL = self.solution['Density'][il, it]
+            rhoR = self.solution['Density'][ir, it]
+            uL = self.solution['Velocity'][il, it]
+            uR = self.solution['Velocity'][ir, it]
+            pL = self.solution['Pressure'][il, it]
+            pR = self.solution['Pressure'][ir, it]            
         
+        # flux calculation
         if flux_method.lower()=='godunov':
             if self.fluid_model!='ideal':
                 raise ValueError('Godunov scheme is available only for ideal gas model')
@@ -317,11 +322,6 @@ class ShockTube:
             flux = EulerFluxFromConservatives(u1AVG, u2AVG, u3AVG, self.fluid)
         
         elif flux_method.lower()=='roe':
-            # reconstruction
-            if (reconstruction is not False and il>1 and ir<self.nNodesHalo-2):
-                rhoL, uL, pL, rhoR, uR, pR = self.MUSCL_VanAlbada_Recon(il, ir, it)
-            else:
-                pass
             if self.fluid_model=='ideal':
                 roe = RoeScheme_Base(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
                 roe.ComputeAveragedVariables()
@@ -360,7 +360,7 @@ class ShockTube:
         
         return flux
 
-    def MUSCL_VanAlbada_Recon(self, il, ir, it):
+    def MUSCL_VanLeer(self, il, ir, it):
         eps = 1e-12
 
         # states left, left minus 1, right, right plus one
@@ -370,19 +370,23 @@ class ShockTube:
         U_rp = np.array([self.solution['Density'][ir+1, it], self.solution['Velocity'][ir+1, it], self.solution['Pressure'][ir+1, it]])
 
         # limited slopes
-        sl = (2*(U_l-U_lm)*(U_r-U_l)+eps) / ((U_l-U_lm)**2+(U_r-U_l)**2 + eps)
-        sr = (2*(U_r-U_l)*(U_rp-U_r)+eps) / ((U_r-U_l)**2+(U_rp-U_r)**2 + eps)
+        aR = U_rp-U_r
+        bR = U_r-U_l
+        aL = U_r-U_l
+        bL = U_l-U_lm
+
+        def func(a, b, eps=1e-6):
+            y = (a*(b**2+eps)+b*(a**2+eps)) / (a**2 + b**2 +2*eps) 
+            return y
+        
+        deltaR = func(aR, bR)
+        deltaL = func(aL, bL)
 
         # reconstruct left and right states
-        U_l_rec = U_l+sl/4*((1-sl/3)*(U_l-U_lm)+(1+sl/3)*(U_r-U_l))
-        U_r_rec = U_r+sr/4*((1-sr/3)*(U_rp-U_r)+(1+sr/3)*(U_r-U_l))
+        U_l_rec = U_l+0.5*deltaL
+        U_r_rec = U_r-0.5*deltaR
 
         return U_l_rec[0], U_l_rec[1], U_l_rec[2], U_r_rec[0], U_r_rec[1], U_r_rec[2]
-
-
-
-
-
 
 
 
