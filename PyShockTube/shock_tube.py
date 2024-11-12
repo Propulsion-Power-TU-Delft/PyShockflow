@@ -27,9 +27,9 @@ class ShockTube:
         -------
         None
         """
-        print()
-        print("=" * 80)
-        print(" " * 34 + "PYSHOCKTUBE")
+        print("\n" + "=" * 80)
+        print(" " * 25 + "🚀  WELCOME TO PYSHOCKTUBE 🚀")
+        print(" " * 18 + "Fluid Dynamics Simulation for Shock Tubes")
         print("=" * 80)
         
         print()  
