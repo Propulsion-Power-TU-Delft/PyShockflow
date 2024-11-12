@@ -103,7 +103,26 @@ class RoeScheme_Base:
         self.alphas[4] = 1/2/self.aAVG**2*(self.pR-self.pL + self.rhoAVG*self.aAVG*(self.uR-self.uL))
 
 
-    def ComputeFlux(self):
+    def ComputeLeftRightEigenvalues(self):
+        """
+        Compute the eigs of left and right values, needed for the entropy fix (Harten-Hyman)
+        """
+        self.aL = self.fluid.ComputeSoundSpeed_p_rho(self.pL, self.rhoL)
+        self.aR = self.fluid.ComputeSoundSpeed_p_rho(self.pR, self.rhoR)
+
+        self.lambda_vecL = np.array([self.uL-self.aL, 
+                                    self.uL,
+                                    self.uL,
+                                    self.uL,
+                                    self.uL+self.aL])
+        
+        self.lambda_vecR = np.array([self.uR-self.aR, 
+                                    self.uR,
+                                    self.uR,
+                                    self.uR,
+                                    self.uR+self.aR])
+
+    def ComputeFlux(self, entropy_fix=True):
         """
         Compute the Roe flux. The flux is computed for the x-split 3D Euler equations, but is returned as if it was a 1D problem.
         It could be useful for future extensions to keep it like this.
@@ -111,9 +130,26 @@ class RoeScheme_Base:
         fluxL = self.EulerFlux(self.u1L, self.u2L, self.u3L)
         fluxR = self.EulerFlux(self.u1R, self.u2R, self.u3R)
         fluxRoe = 0.5*(fluxL+fluxR)
+
+        # compute the entropy fixed abs eigenvalues
+        absEig = np.zeros(5)
+        if entropy_fix==False:
+            absEig = np.abs(self.lambda_vec)
+        else:
+            ## Harten-Hymann entropy fix
+            self.ComputeLeftRightEigenvalues()
+            for k in range(5):
+                tmp = np.array([0, self.lambda_vec[k]-self.lambda_vecL[k], self.lambda_vec[k]-self.lambda_vecR[k]])
+                delta = np.max(tmp)
+                if np.abs(self.lambda_vec[k])<delta:
+                    absEig[k] = delta
+                else:
+                    absEig[k] = np.abs(self.lambda_vec[k])
+
+
         for iDim in range(5):
             for jVec in range(5):
-                fluxRoe[iDim] -= 0.5*self.alphas[jVec]*np.abs(self.lambda_vec[jVec])*self.eigenvector_mat[iDim, jVec]
+                fluxRoe[iDim] -= 0.5*self.alphas[jVec]*absEig[jVec]*self.eigenvector_mat[iDim, jVec]
         
         flux_1D = np.array([fluxRoe[0], fluxRoe[1], fluxRoe[4]])
         return flux_1D
