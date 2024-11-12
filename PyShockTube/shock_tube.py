@@ -27,6 +27,21 @@ class ShockTube:
         -------
         None
         """
+        print()
+        print("=" * 80)
+        print(" " * 34 + "PYSHOCKTUBE")
+        print("=" * 80)
+        
+        print()  
+        print("=" * 80)
+        print(" "*32 + "SIMULATION DATA")
+        print("Length of the domain [m]:                    %.2e" % (x[-1] - x[0]))
+        print("Number of points:                            %i" %len(x))
+        print("Final time instant [s]:                      %.2e" % (t[-1]))
+        print("Fluid name:                                  %s" % fluid_props[0])
+        print("Fluid treatment:                             %s" % fluid_props[1])
+        
+
         self.xNodes = x
         self.nNodes = len(x)
         self.dx = x[1]-x[0]
@@ -38,6 +53,7 @@ class ShockTube:
             assert(len(fluid_props)>=3)
             self.fluid_model = 'ideal'
             self.gmma = fluid_props[2]
+            print("Fluid cp/cv ratio [-]:                       %.2e" %self.gmma)
             self.fluid = FluidIdeal(self.gmma)
         elif fluid_props[1].lower()=='real':
             assert(len(fluid_props)>=2)
@@ -89,6 +105,10 @@ class ShockTube:
         """
         Initialize the conditions based on initial state, defined by right and left values
         """
+        print("Initial L/R density values [kg/m3]:          (%.2e, %.2e)" %(dictIn['Density'][0], dictIn['Density'][1]))
+        print("Initial L/R velocity values [m/s]:           (%.2e, %.2e)" %(dictIn['Velocity'][0], dictIn['Velocity'][1]))
+        print("Initial L/R pressure values [bar]:           (%.2e, %.2e)" %(dictIn['Pressure'][0]/1e5, dictIn['Pressure'][1]/1e5))
+
         dictIn['Energy'] = self.fluid.ComputeStaticEnergy_p_rho(dictIn['Pressure'], dictIn['Density'])
         for name in self.solutionNames:
             self.solution[name][:, 0] = self.CopyInitialState(dictIn[name][0], dictIn[name][1])
@@ -179,6 +199,11 @@ class ShockTube:
         Set the correct boundary condition type (`reflective`, `transparent`, or `periodic`)
         """
         self.BCtype = BCs
+
+        if it==0:
+            print("Boundary Conditions:                         %s" %BCs)
+            print("="*80)
+
         if BCs.lower()=='reflective':
             self.SetReflectiveBoundaryConditions(it)
         elif BCs.lower()=='transparent':
@@ -248,6 +273,10 @@ class ShockTube:
         """
         Solve the equations explicitly in time using a certain flux_method (`Godunov`, `Roe`, `WAF`)
         """
+        print()
+        print("="*80)
+        print(" "*33 + "START SOLVER")
+
         cons = self.solutionCons
         prim = self.solution
         dx, dt = self.dx, self.dt
@@ -271,6 +300,8 @@ class ShockTube:
                     GetPrimitivesFromConservatives(cons['u1'][ix, it], cons['u2'][ix, it], cons['u3'][ix, it], self.fluid)
                 
             self.SetBoundaryConditions(self.BCtype, it)
+        print(" "*34 + "END SOLVER")
+        print("="*80)
 
 
     def ComputeFluxVector(self, il, ir, it, flux_method, high_order):
@@ -475,7 +506,7 @@ class ShockTube:
         full_path = folder_name+'/'+file_name+'.pik'
         with open(full_path, 'wb') as file:
             pickle.dump(self, file)
-        print('Solution save to ' + full_path + ' !')
+        print('Pickle file with solution saved to ' + full_path + ' !')
 
 
 
