@@ -30,6 +30,8 @@ class RoeScheme_Base:
         self.htR = self.ComputeTotalEnthalpy(rhoR, uR, pR, self.eR)
         self.u1L, self.u2L, self.u3L = GetConservativesFromPrimitives(rhoL, uL, pL, self.fluid)
         self.u1R, self.u2R, self.u3R = GetConservativesFromPrimitives(rhoR, uR, pR, self.fluid)
+        self.aL = self.fluid.ComputeSoundSpeed_p_rho(self.pL, self.rhoL)
+        self.aR = self.fluid.ComputeSoundSpeed_p_rho(self.pR, self.rhoR)
 
 
     def RoeAVG(self, fL, fR):
@@ -46,8 +48,6 @@ class RoeScheme_Base:
         """
         self.rhoAVG = sqrt(self.rhoL*self.rhoR)
         self.uAVG = self.RoeAVG(self.uL, self.uR)
-        self.vAVG = 0
-        self.wAVG = 0
         self.hAVG = self.RoeAVG(self.htL, self.htR)
         self.aAVG = sqrt((self.gmma-1)*(self.hAVG-0.5*self.uAVG**2))
     
@@ -63,8 +63,6 @@ class RoeScheme_Base:
         Compute eigenvalues of the averaged Jacobian
         """
         self.lambda_vec = np.array([self.uAVG-self.aAVG, 
-                                    self.uAVG,
-                                    self.uAVG,
                                     self.uAVG, 
                                     self.uAVG+self.aAVG])
     
@@ -73,54 +71,43 @@ class RoeScheme_Base:
         """
         Compute eigenvector matrix of the averaged flux Jacobian
         """
-        self.eigenvector_mat = np.zeros((5, 5))
+        self.eigenvector_mat = np.zeros((3, 3))
         
         self.eigenvector_mat[0, 0] = 1
         self.eigenvector_mat[1, 0] = self.uAVG-self.aAVG
-        self.eigenvector_mat[4, 0] = self.hAVG-self.uAVG*self.aAVG
+        self.eigenvector_mat[2, 0] = self.hAVG-self.uAVG*self.aAVG
 
         self.eigenvector_mat[0, 1] = 1
         self.eigenvector_mat[1, 1] = self.uAVG
-        self.eigenvector_mat[4, 1] = 0.5*self.uAVG**2
+        self.eigenvector_mat[2, 1] = 0.5*self.uAVG**2
 
-        self.eigenvector_mat[2, 2] = 1
-        self.eigenvector_mat[3, 3] = 1
-
-        self.eigenvector_mat[0, 4] = 1
-        self.eigenvector_mat[1, 4] = self.uAVG+self.aAVG
-        self.eigenvector_mat[4, 4] = self.hAVG+self.uAVG*self.aAVG
+        self.eigenvector_mat[0, 2] = 1
+        self.eigenvector_mat[1, 2] = self.uAVG+self.aAVG
+        self.eigenvector_mat[2, 2] = self.hAVG+self.uAVG*self.aAVG
     
 
     def ComputeWaveStrengths(self):
         """
         Characteristic jumps
         """
-        self.alphas = np.zeros(5)
+        self.alphas = np.zeros(3)
         self.alphas[0] = 1/2/self.aAVG**2 *(self.pR-self.pL-self.rhoAVG*self.aAVG*(self.uR-self.uL))
         self.alphas[1] = self.rhoR-self.rhoL - (self.pR-self.pL)/self.aAVG**2
-        self.alphas[2] = self.rhoAVG*self.vAVG
-        self.alphas[3] = self.rhoAVG*self.wAVG
-        self.alphas[4] = 1/2/self.aAVG**2*(self.pR-self.pL + self.rhoAVG*self.aAVG*(self.uR-self.uL))
+        self.alphas[2] = 1/2/self.aAVG**2*(self.pR-self.pL + self.rhoAVG*self.aAVG*(self.uR-self.uL))
 
 
     def ComputeLeftRightEigenvalues(self):
         """
         Compute the eigs of left and right values, needed for the entropy fix (Harten-Hyman)
         """
-        self.aL = self.fluid.ComputeSoundSpeed_p_rho(self.pL, self.rhoL)
-        self.aR = self.fluid.ComputeSoundSpeed_p_rho(self.pR, self.rhoR)
-
         self.lambda_vecL = np.array([self.uL-self.aL, 
-                                    self.uL,
-                                    self.uL,
                                     self.uL,
                                     self.uL+self.aL])
         
         self.lambda_vecR = np.array([self.uR-self.aR, 
                                     self.uR,
-                                    self.uR,
-                                    self.uR,
                                     self.uR+self.aR])
+        
 
     def ComputeFlux(self, entropy_fix=True):
         """
@@ -132,13 +119,13 @@ class RoeScheme_Base:
         fluxRoe = 0.5*(fluxL+fluxR)
 
         # compute the entropy fixed abs eigenvalues
-        absEig = np.zeros(5)
+        absEig = np.zeros(3)
         if entropy_fix==False:
             absEig = np.abs(self.lambda_vec)
         else:
             ## Harten-Hymann entropy fix
             self.ComputeLeftRightEigenvalues()
-            for k in range(5):
+            for k in range(3):
                 tmp = np.array([0, self.lambda_vec[k]-self.lambda_vecL[k], self.lambda_vec[k]-self.lambda_vecR[k]])
                 delta = np.max(tmp)
                 if np.abs(self.lambda_vec[k])<delta:
@@ -146,29 +133,18 @@ class RoeScheme_Base:
                 else:
                     absEig[k] = np.abs(self.lambda_vec[k])
 
-
-        for iDim in range(5):
-            for jVec in range(5):
+        for iDim in range(3):
+            for jVec in range(3):
                 fluxRoe[iDim] -= 0.5*self.alphas[jVec]*absEig[jVec]*self.eigenvector_mat[iDim, jVec]
         
-        flux_1D = np.array([fluxRoe[0], fluxRoe[1], fluxRoe[4]])
-        return flux_1D
+        return fluxRoe
         
-    def EulerFlux(self, u1, u2, u3, dim=3):
+    def EulerFlux(self, u1, u2, u3):
         """
         Get the Euler flux starting from conservative variables. Depending on `dim`, the flux is returned for a 1D or 3D problem. 
         """
-        flux = np.zeros(5)
         flux1D = EulerFluxFromConservatives(u1, u2, u3, self.fluid)
-        if dim==1:
-            return flux1D
-        else:
-            flux[0] = flux1D[0]
-            flux[1] = flux1D[1]
-            flux[2] = 0
-            flux[3] = 0
-            flux[4] = flux1D[2]
-            return flux
+        return flux1D
 
 
 
@@ -179,8 +155,6 @@ class RoeScheme_Generalized(RoeScheme_Base):
     """
     def __init__(self, rhoL, rhoR, uL, uR, pL, pR, fluid):
         super().__init__(rhoL, rhoR, uL, uR, pL, pR, fluid)
-        self.aL = self.fluid.ComputeSoundSpeed_p_rho(self.pL, self.rhoL)
-        self.aR = self.fluid.ComputeSoundSpeed_p_rho(self.pR, self.rhoR)
         self.deltaP = (self.pR-self.pL)
         self.deltaU = (self.uR - self.uL)
         self.deltaRho = (self.rhoR - self.rhoL)
@@ -213,8 +187,8 @@ class RoeScheme_Generalized(RoeScheme_Base):
                                     self.uR])
     
     def ComputeFlux(self, entropy_fix=True):
-        fluxL = self.EulerFlux(self.u1L, self.u2L, self.u3L, dim=1)
-        fluxR = self.EulerFlux(self.u1R, self.u2R, self.u3R, dim=1)
+        fluxL = self.EulerFlux(self.u1L, self.u2L, self.u3L)
+        fluxR = self.EulerFlux(self.u1R, self.u2R, self.u3R)
 
         self.ComputeDeltaFlux(entropy_fix)
         fluxRoe = 0.5*(fluxL+fluxR) - 0.5*self.deltaF
