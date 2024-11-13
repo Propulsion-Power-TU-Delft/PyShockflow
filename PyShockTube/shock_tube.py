@@ -278,7 +278,8 @@ class ShockTube:
         print(" "*33 + "START SOLVER")
         print("Numerical flux method: %s" %(flux_method))
         print("MUSCL reconstruction: %s" %high_order)
-        print("Limiter: %s" %(limiter))
+        # if high_order:
+        #     print("Limiter: %s" %(limiter))
         print()
 
         cons = self.solutionCons
@@ -286,25 +287,21 @@ class ShockTube:
         dx, dt = self.dx, self.dt
         for it in range(1, self.nTime):
             print('Time step: %i of %i' %(it, self.nTime))
-            for ix in range(1, self.nNodesHalo-1):
-                if ix==1: # only for the first node compute left and right fluxes
-                    fluxVec_left = self.ComputeFluxVector(ix-1, ix, it-1, flux_method, high_order, limiter)
-                    fluxVec_right = self.ComputeFluxVector(ix, ix+1, it-1, flux_method, high_order, limiter)
-                else:
-                    fluxVec_left = fluxVec_right  # make use of the previously calculated flux (conservative approach)
-                    fluxVec_right = self.ComputeFluxVector(ix, ix+1, it-1, flux_method, high_order, limiter)
 
-                fluxVec_net = fluxVec_left-fluxVec_right
-                
-                cons['u1'][ix, it] = cons['u1'][ix, it-1] + dt/dx*fluxVec_net[0]
-                cons['u2'][ix, it] = cons['u2'][ix, it-1] + dt/dx*fluxVec_net[1]
-                cons['u3'][ix, it] = cons['u3'][ix, it-1] + dt/dx*fluxVec_net[2]
+            flux = np.zeros((self.nNodes+1, 3))
+            for iFace in range(flux.shape[0]):
+                flux[iFace, :] = self.ComputeFluxVector(iFace, iFace+1, it-1, flux_method, high_order, limiter)
+            
+            for iNode in range(1, self.nNodesHalo-1):
+                cons['u1'][iNode, it] = cons['u1'][iNode, it-1] + dt/dx * (flux[iNode-1, 0] - flux[iNode, 0])
+                cons['u2'][iNode, it] = cons['u2'][iNode, it-1] + dt/dx * (flux[iNode-1, 1] - flux[iNode, 1])
+                cons['u3'][iNode, it] = cons['u3'][iNode, it-1] + dt/dx * (flux[iNode-1, 2] - flux[iNode, 2])
 
-                prim['Density'][ix, it], prim['Velocity'][ix, it], prim['Pressure'][ix, it], prim['Energy'][ix, it] = \
-                    GetPrimitivesFromConservatives(cons['u1'][ix, it], cons['u2'][ix, it], cons['u3'][ix, it], self.fluid)
+            prim['Density'][1:-1, it], prim['Velocity'][1:-1, it], prim['Pressure'][1:-1, it], prim['Energy'][1:-1, it] = \
+                GetPrimitivesFromConservatives(cons['u1'][1:-1, it], cons['u2'][1:-1, it], cons['u3'][1:-1, it], self.fluid)
                 
             self.SetBoundaryConditions(self.BCtype, it)
-            # self.PlotSolution(it)
+
         print(" "*34 + "END SOLVER")
         print("="*80)
 
@@ -315,8 +312,8 @@ class ShockTube:
         """
         # flow reconstruction
         if (high_order and il>2 and ir<self.nNodesHalo-2):
-            # rhoL, uL, pL, rhoR, uR, pR = self.MUSCL_VanAlbada_Reconstruction(il, ir, it)
-            rhoL, uL, pL, rhoR, uR, pR = self.MUSCL_Reconstruction(il, ir, it, limiter)
+            rhoL, uL, pL, rhoR, uR, pR = self.MUSCL_VanAlbada_Reconstruction(il, ir, it)  # currently working
+            # rhoL, uL, pL, rhoR, uR, pR = self.MUSCL_Reconstruction(il, ir, it, limiter)  # at the moment creates oscillations with every limiter for some reasons
         else:
             rhoL = self.solution['Density'][il, it]
             rhoR = self.solution['Density'][ir, it]
@@ -399,7 +396,8 @@ class ShockTube:
 
     def MUSCL_VanAlbada_Reconstruction(self, il, ir, it):
         """
-        MUSCL approach with Van Albada limiter. Formulation taken from pag. 110 of "Computational Fluid Dynamics book, by Blazek", where kappa=0
+        MUSCL approach with Van Albada limiter. Formulation taken from pag. 110 of "Computational Fluid Dynamics book, by Blazek", where kappa=0,
+        and the reconstruction with limiter is embedded in a single formula
         """
         # states left, left minus 1, right, right plus one
         U_l = np.array([self.solution['Density'][il, it], self.solution['Velocity'][il, it], self.solution['Pressure'][il, it]])
@@ -520,7 +518,7 @@ class ShockTube:
 
     def MUSCL_Reconstruction(self, il, ir, it, limiter):
         """
-        MUSCL reconstruction with Van Albada Limiter
+        MUSCL reconstruction with limiter. Currently not working, since it creates oscillations with every limiter
         """
 
         # states left, left minus 1, right, right plus one
@@ -563,7 +561,7 @@ class ShockTube:
 
     def Compute_Limiter(self, r_vec, limiter):
         """
-        Compute the Phi function of the reconstruction, formula 8.4.18 Hirsch book
+        Compute the limiter values. Currently not working.
         """
         psi = np.zeros(3)
         for i in range(len(r_vec)):
