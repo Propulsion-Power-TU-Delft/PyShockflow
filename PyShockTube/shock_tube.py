@@ -269,13 +269,17 @@ class ShockTube:
         self.solution['Energy'][-1, iTime] = self.solution['Energy'][1, iTime]
 
 
-    def SolveSystem(self, flux_method, high_order=False):
+    def SolveSystem(self, flux_method, high_order=False, limiter='Van Albada'):
         """
         Solve the equations explicitly in time using a certain flux_method (`Godunov`, `Roe`, `WAF`)
         """
         print()
         print("="*80)
         print(" "*33 + "START SOLVER")
+        print("Numerical flux method: %s" %(flux_method))
+        print("MUSCL reconstruction: %s" %high_order)
+        print("Limiter: %s" %(limiter))
+        print()
 
         cons = self.solutionCons
         prim = self.solution
@@ -284,11 +288,11 @@ class ShockTube:
             print('Time step: %i of %i' %(it, self.nTime))
             for ix in range(1, self.nNodesHalo-1):
                 if ix==1: # only for the first node compute left and right fluxes
-                    fluxVec_left = self.ComputeFluxVector(ix-1, ix, it-1, flux_method, high_order)
-                    fluxVec_right = self.ComputeFluxVector(ix, ix+1, it-1, flux_method, high_order)
+                    fluxVec_left = self.ComputeFluxVector(ix-1, ix, it-1, flux_method, high_order, limiter)
+                    fluxVec_right = self.ComputeFluxVector(ix, ix+1, it-1, flux_method, high_order, limiter)
                 else:
                     fluxVec_left = fluxVec_right  # make use of the previously calculated flux (conservative approach)
-                    fluxVec_right = self.ComputeFluxVector(ix, ix+1, it-1, flux_method, high_order)
+                    fluxVec_right = self.ComputeFluxVector(ix, ix+1, it-1, flux_method, high_order, limiter)
 
                 fluxVec_net = fluxVec_left-fluxVec_right
                 
@@ -300,17 +304,19 @@ class ShockTube:
                     GetPrimitivesFromConservatives(cons['u1'][ix, it], cons['u2'][ix, it], cons['u3'][ix, it], self.fluid)
                 
             self.SetBoundaryConditions(self.BCtype, it)
+            # self.PlotSolution(it)
         print(" "*34 + "END SOLVER")
         print("="*80)
 
 
-    def ComputeFluxVector(self, il, ir, it, flux_method, high_order):
+    def ComputeFluxVector(self, il, ir, it, flux_method, high_order, limiter):
         """
         Compute the flux vector at the interface between grid points `il` and `ir`, using a certain `flux_method`
         """
         # flow reconstruction
         if (high_order and il>2 and ir<self.nNodesHalo-2):
-            rhoL, uL, pL, rhoR, uR, pR = self.MUSCL_VanAlbada_Reconstruction(il, ir, it)
+            # rhoL, uL, pL, rhoR, uR, pR = self.MUSCL_VanAlbada_Reconstruction(il, ir, it)
+            rhoL, uL, pL, rhoR, uR, pR = self.MUSCL_Reconstruction(il, ir, it, limiter)
         else:
             rhoL = self.solution['Density'][il, it]
             rhoR = self.solution['Density'][ir, it]
@@ -507,6 +513,80 @@ class ShockTube:
         with open(full_path, 'wb') as file:
             pickle.dump(self, file)
         print('Pickle file with solution saved to ' + full_path + ' !')
+
+
+
+
+
+    def MUSCL_Reconstruction(self, il, ir, it, limiter):
+        """
+        MUSCL reconstruction with Van Albada Limiter
+        """
+
+        # states left, left minus 1, right, right plus one
+        U_l = np.array([self.solution['Density'][il, it], self.solution['Velocity'][il, it], self.solution['Pressure'][il, it]])
+        U_lm = np.array([self.solution['Density'][il-1, it], self.solution['Velocity'][il-1, it], self.solution['Pressure'][il-1, it]])
+        U_r = np.array([self.solution['Density'][ir, it], self.solution['Velocity'][ir, it], self.solution['Pressure'][ir, it]])
+        U_rp = np.array([self.solution['Density'][ir+1, it], self.solution['Velocity'][ir+1, it], self.solution['Pressure'][ir+1, it]])
+        
+        def compute_jump_ratio(num, den):
+            r = np.zeros_like(num)
+            for i in range(len(num)):
+                if np.abs(num[i])<=1e-8:
+                    num[i] = 0.
+                    den[i] = 1.
+                elif (num[i]>=1e-8 and np.abs(den[i])<1e-8):
+                    num[i] = 1.
+                    den[i] = 1.
+                elif (num[i]<-1e-8 and np.abs(den[i])<1e-8):
+                    num[i] = -1.
+                    den[i] = 1.
+            return num/den
+        
+        num = (U_r-U_l)
+        den = (U_l-U_lm)
+        r_l = compute_jump_ratio(num, den)
+
+        num = (U_rp-U_r)
+        den = (U_r-U_l)
+        r_r = compute_jump_ratio(num, den)
+
+        Phi_l = self.Compute_Limiter(r_l, limiter)
+        Phi_r = self.Compute_Limiter(r_r, limiter)
+
+        U_l_rec = U_l + 0.5*Phi_l*(U_r-U_l)
+        U_r_rec = U_r - 0.5*Phi_r*(U_r-U_l)
+
+        return U_l_rec[0], U_l_rec[1], U_l_rec[2], U_r_rec[0], U_r_rec[1], U_r_rec[2]
+
+
+
+    def Compute_Limiter(self, r_vec, limiter):
+        """
+        Compute the Phi function of the reconstruction, formula 8.4.18 Hirsch book
+        """
+        psi = np.zeros(3)
+        for i in range(len(r_vec)):
+            r = r_vec[i]
+
+            if limiter.lower() == 'van albada':
+                psi[i] = (r**2+r)/(1+r**2)
+
+            elif limiter.lower() == 'van leer':
+                psi[i] = (r+np.abs(r))/(1+np.abs(r))
+
+            elif limiter.lower() == 'min mod':
+                psi[i] = np.maximum(0, np.minimum(1, r))
+
+            elif limiter.lower() == 'superbee':
+                psi[i] = np.maximum(0, np.minimum(2*r, 1), np.minimum(r, 2))
+
+            elif limiter.lower() == 'none':
+                psi[i] = 1 
+            else:
+                raise ValueError('Limiter not recognized!')
+        
+        return psi
 
 
 
