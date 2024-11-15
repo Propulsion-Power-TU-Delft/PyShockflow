@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 class FluidIdeal():
     """
-    Ideal Fluid Class
+    Ideal Fluid Class, where thermodynamic properties and transformation are computed with ideal gas laws
     """
     def __init__(self, gmma):
         self.gmma = gmma
