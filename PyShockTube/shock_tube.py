@@ -271,7 +271,9 @@ class ShockTube:
 
     def SolveSystem(self, flux_method, high_order=False, limiter='Van Albada'):
         """
-        Solve the equations explicitly in time using a certain flux_method (`Godunov`, `Roe`, `WAF`)
+        Solve the equations explicitly in time (forward Euler) using a certain flux_method (`Godunov`, `Roe`, `WAF`). high_order
+        specifies if applying or not high order reconstruction with limiters. At the moment only type one is working -> simply
+        impose high_order=True
         """
         print()
         print("="*80)
@@ -282,24 +284,31 @@ class ShockTube:
         #     print("Limiter: %s" %(limiter))
         print()
 
+        # short aliases
         cons = self.solutionCons
         prim = self.solution
         dx, dt = self.dx, self.dt
+        
+        # time-steps loop
         for it in range(1, self.nTime):
             print('Time step: %i of %i' %(it, self.nTime))
 
+            # compute fluxes on every internal interface
             flux = np.zeros((self.nNodes+1, 3))
             for iFace in range(flux.shape[0]):
                 flux[iFace, :] = self.ComputeFluxVector(iFace, iFace+1, it-1, flux_method, high_order, limiter)
             
+            # update the conservatives for every element
             for iNode in range(1, self.nNodesHalo-1):
                 cons['u1'][iNode, it] = cons['u1'][iNode, it-1] + dt/dx * (flux[iNode-1, 0] - flux[iNode, 0])
                 cons['u2'][iNode, it] = cons['u2'][iNode, it-1] + dt/dx * (flux[iNode-1, 1] - flux[iNode, 1])
                 cons['u3'][iNode, it] = cons['u3'][iNode, it-1] + dt/dx * (flux[iNode-1, 2] - flux[iNode, 2])
 
+            # update the primitives
             prim['Density'][1:-1, it], prim['Velocity'][1:-1, it], prim['Pressure'][1:-1, it], prim['Energy'][1:-1, it] = \
                 GetPrimitivesFromConservatives(cons['u1'][1:-1, it], cons['u2'][1:-1, it], cons['u3'][1:-1, it], self.fluid)
-                
+            
+            # set boundary conditions to update the ghost points for the new iteration
             self.SetBoundaryConditions(self.BCtype, it)
 
         print(" "*34 + "END SOLVER")
@@ -308,9 +317,10 @@ class ShockTube:
 
     def ComputeFluxVector(self, il, ir, it, flux_method, high_order, limiter):
         """
-        Compute the flux vector at the interface between grid points `il` and `ir`, using a certain `flux_method`
+        Compute the flux vector at the interface between grid points `il` and `ir`, using a certain `flux_method`.
         """
-        # flow reconstruction
+        
+        # flow reconstruction if high_order=True
         if (high_order and il>2 and ir<self.nNodesHalo-2):
             rhoL, uL, pL, rhoR, uR, pR = self.MUSCL_VanAlbada_Reconstruction(il, ir, it)  # currently working
             # rhoL, uL, pL, rhoR, uR, pR = self.MUSCL_Reconstruction(il, ir, it, limiter)  # at the moment creates oscillations with every limiter for some reasons
@@ -394,6 +404,7 @@ class ShockTube:
         
         return flux
 
+
     def MUSCL_VanAlbada_Reconstruction(self, il, ir, it):
         """
         MUSCL approach with Van Albada limiter. Formulation taken from pag. 110 of "Computational Fluid Dynamics book, by Blazek", where kappa=0,
@@ -405,7 +416,7 @@ class ShockTube:
         U_r = np.array([self.solution['Density'][ir, it], self.solution['Velocity'][ir, it], self.solution['Pressure'][ir, it]])
         U_rp = np.array([self.solution['Density'][ir+1, it], self.solution['Velocity'][ir+1, it], self.solution['Pressure'][ir+1, it]])
 
-        # limited slopes
+        # unlimited jumps
         aR = U_rp-U_r
         bR = U_r-U_l
         aL = U_r-U_l
@@ -415,6 +426,7 @@ class ShockTube:
             y = (a*(b**2+eps)+b*(a**2+eps)) / (a**2 + b**2 +2*eps) 
             return y
         
+        # limited slopes
         deltaR = func(aR, bR)
         deltaL = func(aL, bL)
 
@@ -423,7 +435,6 @@ class ShockTube:
         U_r_rec = U_r-0.5*deltaR
 
         return U_l_rec[0], U_l_rec[1], U_l_rec[2], U_r_rec[0], U_r_rec[1], U_r_rec[2]
-
 
 
     def ShowAnimation(self):
@@ -455,6 +466,7 @@ class ShockTube:
                     col.grid(alpha=.3)
             plt.pause(1e-3)
     
+
     def ShowContourAnimation(self):
         """
         Show contour animation of the results for all time instants
@@ -513,9 +525,6 @@ class ShockTube:
         print('Pickle file with solution saved to ' + full_path + ' !')
 
 
-
-
-
     def MUSCL_Reconstruction(self, il, ir, it, limiter):
         """
         MUSCL reconstruction with limiter. Currently not working, since it creates oscillations with every limiter
@@ -556,7 +565,6 @@ class ShockTube:
         U_r_rec = U_r - 0.5*Phi_r*(U_r-U_l)
 
         return U_l_rec[0], U_l_rec[1], U_l_rec[2], U_r_rec[0], U_r_rec[1], U_r_rec[2]
-
 
 
     def Compute_Limiter(self, r_vec, limiter):
