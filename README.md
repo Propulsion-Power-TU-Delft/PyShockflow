@@ -59,9 +59,6 @@ on windows based machines. It should be quite easy to fix. With time the code wi
 
 * The system of Euler equations is solved with the forward Euler explicit method (first-order in time). This means that the time-step must be accurately restricted below certain limits (case by case dependent), and a large number of iterations may be required to simulate a certain problem. The first thing to do when a simulation fails, is to try reducing the `CFL_MAX` input parameter. 
 
-In the future, implicit and multi-step temporal discretizations may be added to increase the flexibility of the solver.
-
-
 
 
 ### Results Example ###
@@ -101,10 +98,10 @@ Roe's generalized scheme for real gas, with and without Entropy fix.
 
 [1] Toro, Eleuterio F. Riemann solvers and numerical methods for fluid dynamics: a practical introduction. Springer Science & Business Media, 2013.
 
-[2] Arabi, Sina, Jean-Yves TrÃ©panier, and Ricardo Camarero. "A simple extension of Roe's scheme for real gases." Journal of Computational Physics 329 (2017): 16-28.
+[2] Arabi, Sina, Jean-Yves Trépanier, and Ricardo Camarero. "A simple extension of Roe's scheme for real gases." Journal of Computational Physics 329 (2017): 16-28.
 
 [3] Blazek, Jiri. Computational fluid dynamics: principles and applications. Butterworth-Heinemann, 2015.
 
-[4] Dâ€™Alessandro, Simone, Marco Pizzarelli, and Francesco Nasuti. "A hybrid real/ideal gas mixture computational framework to capture wave propagation in liquid rocket combustion chamber conditions." Aerospace 8.9 (2021): 250.
+[4] D’Alessandro, Simone, Marco Pizzarelli, and Francesco Nasuti. "A hybrid real/ideal gas mixture computational framework to capture wave propagation in liquid rocket combustion chamber conditions." Aerospace 8.9 (2021): 250.
 
 [5] Hirsch, Charles. Numerical computation of internal and external flows: The fundamentals of computational fluid dynamics. Elsevier, 2007.
