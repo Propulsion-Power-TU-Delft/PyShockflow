@@ -44,7 +44,7 @@ class RoeScheme_Base:
     
     def ComputeAveragedVariables(self):
         """
-        Compute the Roe averaged variables for the x-split 3D Euler equations
+        Compute the Roe averaged variables for the 1D Euler equations
         """
         self.rhoAVG = sqrt(self.rhoL*self.rhoR)
         self.uAVG = self.RoeAVG(self.uL, self.uR)
@@ -88,7 +88,7 @@ class RoeScheme_Base:
 
     def ComputeWaveStrengths(self):
         """
-        Characteristic jumps
+        Characteristic jumps due to initial conditions
         """
         self.alphas = np.zeros(3)
         self.alphas[0] = 1/2/self.aAVG**2 *(self.pR-self.pL-self.rhoAVG*self.aAVG*(self.uR-self.uL))
@@ -111,8 +111,7 @@ class RoeScheme_Base:
 
     def ComputeFlux(self, entropy_fix=True):
         """
-        Compute the Roe flux. The flux is computed for the x-split 3D Euler equations, but is returned as if it was a 1D problem.
-        It could be useful for future extensions to keep it like this.
+        Compute the Roe flux. The flux is computed for 1D problems.
         """
         fluxL = self.EulerFlux(self.u1L, self.u2L, self.u3L)
         fluxR = self.EulerFlux(self.u1R, self.u2R, self.u3R)
@@ -141,7 +140,7 @@ class RoeScheme_Base:
         
     def EulerFlux(self, u1, u2, u3):
         """
-        Get the Euler flux starting from conservative variables. Depending on `dim`, the flux is returned for a 1D or 3D problem. 
+        Get the Euler flux starting from conservative variables. 
         """
         flux1D = EulerFluxFromConservatives(u1, u2, u3, self.fluid)
         return flux1D
@@ -159,21 +158,25 @@ class RoeScheme_Generalized(RoeScheme_Base):
         self.deltaU = (self.uR - self.uL)
         self.deltaRho = (self.rhoR - self.rhoL)
 
+
     def ComputeAveragedVariables(self):
         super().ComputeAveragedVariables()
         self.aAVG = self.RoeAVG(self.aL, self.aR)
     
+
     def ComputeWaveStrengths(self):
         self.alphas = np.zeros(3)
         self.alphas[0] = 1/2/self.aAVG**2*(self.deltaP+self.rhoAVG*self.aAVG*self.deltaU)
         self.alphas[1] = 1/2/self.aAVG**2*(self.deltaP-self.rhoAVG*self.aAVG*self.deltaU)
         self.alphas[2] = self.deltaRho-self.deltaP/self.aAVG**2
     
+
     def ComputeAveragedEigenvalues(self):
         self.lambda_vec = np.array([self.uAVG+self.aAVG, 
                                     self.uAVG-self.aAVG,
                                     self.uAVG])
     
+
     def ComputeLeftRightEigenvalues(self):
         """
         Compute the eigs of left and right values, needed for the entropy fix (Harten-Hyman)
@@ -186,7 +189,11 @@ class RoeScheme_Generalized(RoeScheme_Base):
                                     self.uR-self.aR,
                                     self.uR])
     
+
     def ComputeFlux(self, entropy_fix=True):
+        """
+        Assemble the global flux, average + dissipation
+        """
         fluxL = self.EulerFlux(self.u1L, self.u2L, self.u3L)
         fluxR = self.EulerFlux(self.u1R, self.u2R, self.u3R)
 
@@ -194,9 +201,10 @@ class RoeScheme_Generalized(RoeScheme_Base):
         fluxRoe = 0.5*(fluxL+fluxR) - 0.5*self.deltaF
         return fluxRoe
     
+
     def ComputeDeltaFlux(self, entropy_fix):
         """
-        Compute the upwind correction for the flux
+        Compute the correction for the flux. Formulation taken from "A simple extension of Roe's scheme for real gases" by Arabi et al.
         """
         self.deltaF = np.zeros(3)
 
