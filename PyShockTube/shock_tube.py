@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import pickle
+import csv
 from PyShockTube.riemann_problem import RiemannProblem
 from PyShockTube.roe_scheme import RoeScheme_Base, RoeScheme_Generalized
 from PyShockTube.muscl_hancock import MusclHancock
@@ -50,7 +51,6 @@ class ShockTube:
         self.nTime = len(t)
         self.fluid_name = fluid_props[0]
         if fluid_props[1].lower()=='ideal':
-            assert(len(fluid_props)>=3)
             self.fluid_model = 'ideal'
             self.gmma = fluid_props[2]
             print("Fluid cp/cv ratio [-]:                       %.2e" %self.gmma)
@@ -167,7 +167,36 @@ class ShockTube:
         if file_name is not None and folder_name is not None:
             os.makedirs(folder_name, exist_ok=True)
             plt.savefig(folder_name + '/' + file_name + '.pdf', bbox_inches='tight')
-    
+
+
+    def PlotNodeSolution(self, iNode, folder_name = None, file_name = None):
+        """
+        Plot the solution at a specified node location over time
+        """
+        fig, ax = plt.subplots(2, 2, figsize=(12, 8))
+        ax[0, 0].plot(self.timeVec[:], self.solution['Density'][iNode, :], '-C0o', ms=2)
+        ax[0, 0].set_ylabel(r'Density')
+
+        ax[0, 1].plot(self.timeVec[:], self.solution['Velocity'][iNode, :], '-C1o', ms=2)
+        ax[0, 1].set_ylabel(r'Velocity')
+
+        ax[1, 0].plot(self.timeVec[:], self.solution['Pressure'][iNode, :], '-C2o', ms=2)
+        ax[1, 0].set_ylabel(r'Pressure')
+
+        ax[1, 1].plot(self.timeVec[:], self.solution['Energy'][iNode, :], '-C3o', ms=2)
+        ax[1, 1].set_ylabel(r'Energy')
+
+        fig.suptitle('Location %.3f' % self.xNodes[iNode])
+
+        for row in ax:
+            for col in row:
+                col.set_xlabel('t')
+                col.grid(alpha=.3)
+
+        if file_name is not None and folder_name is not None:
+            os.makedirs(folder_name, exist_ok=True)
+            plt.savefig(folder_name + '/' + file_name + '.pdf', bbox_inches='tight')
+
 
     def PlotConservativeSolution(self, iTime, folder_name = None, file_name = None):
         """
@@ -524,6 +553,22 @@ class ShockTube:
             pickle.dump(self, file)
         print('Pickle file with solution saved to ' + full_path + ' !')
 
+
+    def SaveNodeSolutionToCSV(self, iNode, timeInstants, folder_name, file_name):
+        """
+        Save the 'Pressure' array from the solution to a CSV file.
+        """
+        file_path = folder_name + '/' + file_name + '.dat'
+        pressure_data = self.solution['Pressure'][iNode, :]  # Extract the pressure data (2D array)
+
+        with open(file_path, 'w', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+            for value in range(len(timeInstants)):
+                writer.writerow([timeInstants[value], pressure_data[value]])
+            # writer.writerow(pressure_data)  # Write each row of the array to the CSV file
+            # writer.writerow(timeInstants)  # Write each row of the array to the CSV file
+
+        print(f"Pressure data saved to {file_path}!")
 
     def MUSCL_Reconstruction(self, il, ir, it, limiter):
         """
