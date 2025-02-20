@@ -230,74 +230,93 @@ class ShockTube:
         Set the correct boundary condition type (`reflective`, `transparent`, or `periodic`)
         """
         self.BCtype = BCs
+        if isinstance(self.BCtype, list):
+            pass
+        else:
+            self.BCtype = [BCs, BCs]
 
         if it==0:
-            print("Boundary Conditions:                         %s" %BCs)
+            print("Boundary Conditions Left:                    %s" %self.BCtype[0])
+            print("Boundary Conditions Right:                   %s" %self.BCtype[1])
             print("="*80)
 
-        if BCs.lower()=='reflective':
-            self.SetReflectiveBoundaryConditions(it)
-        elif BCs.lower()=='transparent':
-            self.SetTransparentBoundaryConditions(it)
-        elif BCs.lower()=='periodic':
-            self.SetPeriodicBoundaryConditions(it)
+        if self.BCtype[0].lower()=='reflective':
+            self.SetReflectiveBoundaryConditions(it, 'left')
+        elif self.BCtype[0].lower()=='transparent':
+            self.SetTransparentBoundaryConditions(it, 'left')
+        elif self.BCtype[0].lower()=='periodic':
+            self.SetPeriodicBoundaryConditions(it, 'left')
         else:
-            raise ValueError("Unknown boundary condition type")
+            raise ValueError("Unknown boundary condition type on the left")
+        
+        if self.BCtype[1].lower()=='reflective':
+            self.SetReflectiveBoundaryConditions(it, 'right')
+        elif self.BCtype[1].lower()=='transparent':
+            self.SetTransparentBoundaryConditions(it, 'right')
+        elif self.BCtype[1].lower()=='periodic':
+            self.SetPeriodicBoundaryConditions(it, 'right')
+        else:
+            raise ValueError("Unknown boundary condition type on the right")
         
         # update also the conservative variable arrays based on what has been done on the primitive
         self.solutionCons['u1'][:, it], self.solutionCons['u2'][:, it], self.solutionCons['u3'][:, it] = (
                     GetConservativesFromPrimitives(self.solution['Density'][:, it], self.solution['Velocity'][:, it], self.solution['Pressure'][:, it], self.fluid))
 
 
-    def SetReflectiveBoundaryConditions(self, iTime):
+    def SetReflectiveBoundaryConditions(self, iTime, location):
         """
         Set reflective BC at time `iTime`
         """
-        self.solution['Density'][0, iTime] = self.solution['Density'][1, iTime]
-        self.solution['Density'][-1, iTime] = self.solution['Density'][-2, iTime]
-
-        self.solution['Velocity'][0, iTime] = -self.solution['Velocity'][1, iTime]
-        self.solution['Velocity'][-1, iTime] = -self.solution['Velocity'][-2, iTime]
-
-        self.solution['Pressure'][0, iTime] = self.solution['Pressure'][1, iTime]
-        self.solution['Pressure'][-1, iTime] = self.solution['Pressure'][-2, iTime]
-
-        self.solution['Energy'][0, iTime] = self.solution['Energy'][1, iTime]
-        self.solution['Energy'][-1, iTime] = self.solution['Energy'][-2, iTime]
+        if location=='left':
+            self.solution['Density'][0, iTime] = self.solution['Density'][1, iTime]
+            self.solution['Velocity'][0, iTime] = -self.solution['Velocity'][1, iTime]
+            self.solution['Pressure'][0, iTime] = self.solution['Pressure'][1, iTime]
+            self.solution['Energy'][0, iTime] = self.solution['Energy'][1, iTime]
+        elif location=='right':
+            self.solution['Density'][-1, iTime] = self.solution['Density'][-2, iTime]
+            self.solution['Velocity'][-1, iTime] = -self.solution['Velocity'][-2, iTime]
+            self.solution['Pressure'][-1, iTime] = self.solution['Pressure'][-2, iTime]
+            self.solution['Energy'][-1, iTime] = self.solution['Energy'][-2, iTime]
+        else:
+            raise ValueError('Unknown location specified')
+            
     
 
-    def SetTransparentBoundaryConditions(self, iTime):
+    def SetTransparentBoundaryConditions(self, iTime, location):
         """
         Set transparent BC at time `iTime`
         """
-        self.solution['Density'][0, iTime] = self.solution['Density'][1, iTime]
-        self.solution['Density'][-1, iTime] = self.solution['Density'][-2, iTime]
-
-        self.solution['Velocity'][0, iTime] = self.solution['Velocity'][1, iTime]
-        self.solution['Velocity'][-1, iTime] = self.solution['Velocity'][-2, iTime]
-
-        self.solution['Pressure'][0, iTime] = self.solution['Pressure'][1, iTime]
-        self.solution['Pressure'][-1, iTime] = self.solution['Pressure'][-2, iTime]
-
-        self.solution['Energy'][0, iTime] = self.solution['Energy'][1, iTime]
-        self.solution['Energy'][-1, iTime] = self.solution['Energy'][-2, iTime]
-    
-
-    def SetPeriodicBoundaryConditions(self, iTime):
+        if location=='left':
+            self.solution['Density'][0, iTime] = self.solution['Density'][1, iTime]
+            self.solution['Velocity'][0, iTime] = self.solution['Velocity'][1, iTime]
+            self.solution['Pressure'][0, iTime] = self.solution['Pressure'][1, iTime]
+            self.solution['Energy'][0, iTime] = self.solution['Energy'][1, iTime]
+        elif location=='right':
+            self.solution['Density'][-1, iTime] = self.solution['Density'][-2, iTime]
+            self.solution['Velocity'][-1, iTime] = self.solution['Velocity'][-2, iTime]
+            self.solution['Pressure'][-1, iTime] = self.solution['Pressure'][-2, iTime]
+            self.solution['Energy'][-1, iTime] = self.solution['Energy'][-2, iTime]
+        else:
+            raise ValueError('Unknown location specified')
+        
+        
+        
+    def SetPeriodicBoundaryConditions(self, iTime, location):
         """
         Set periodic BC at time `iTime`
         """
-        self.solution['Density'][0, iTime] = self.solution['Density'][-2, iTime]
-        self.solution['Density'][-1, iTime] = self.solution['Density'][1, iTime]
-
-        self.solution['Velocity'][0, iTime] = self.solution['Velocity'][-2, iTime]
-        self.solution['Velocity'][-1, iTime] = self.solution['Velocity'][1, iTime]
-
-        self.solution['Pressure'][0, iTime] = self.solution['Pressure'][-2, iTime]
-        self.solution['Pressure'][-1, iTime] = self.solution['Pressure'][1, iTime]
-
-        self.solution['Energy'][0, iTime] = self.solution['Energy'][-2, iTime]
-        self.solution['Energy'][-1, iTime] = self.solution['Energy'][1, iTime]
+        if location=='left':
+            self.solution['Density'][0, iTime] = self.solution['Density'][-2, iTime]
+            self.solution['Velocity'][0, iTime] = self.solution['Velocity'][-2, iTime]
+            self.solution['Pressure'][0, iTime] = self.solution['Pressure'][-2, iTime]
+            self.solution['Energy'][0, iTime] = self.solution['Energy'][-2, iTime]
+        elif location=='right':
+            self.solution['Density'][-1, iTime] = self.solution['Density'][1, iTime]
+            self.solution['Velocity'][-1, iTime] = self.solution['Velocity'][1, iTime]
+            self.solution['Pressure'][-1, iTime] = self.solution['Pressure'][1, iTime]
+            self.solution['Energy'][-1, iTime] = self.solution['Energy'][1, iTime]
+        else:
+            raise ValueError('Unknown location specified')
 
 
     def SolveSystem(self, flux_method, high_order=False, limiter='Van Albada'):
