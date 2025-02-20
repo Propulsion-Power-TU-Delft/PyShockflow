@@ -16,6 +16,8 @@ BOUNDARY_CONDITIONS = 'reflective'
 FLUID = 'air'
 FLUID_MODEL = 'ideal'
 FLUID_GAMMA = 1.4
+FLUID_GAS_CONSTANT = 287.05
+
 
 
 
@@ -31,7 +33,7 @@ dtMax = CFLmax* dx / Smax
 nt = int(TIME_MAX/dtMax)
 t = np.linspace(0, TIME_MAX, nt)
 
-tube = ShockTube(x, t, FLUID, FLUID_MODEL, FLUID_GAMMA)
+tube = ShockTube(x, t, FLUID, FLUID_MODEL, FLUID_GAMMA, FLUID_GAS_CONSTANT)
 inCondDict = {'Density': np.array([RHOL, RHOR]), 'Velocity': np.array([UL, UR]), 'Pressure': np.array([PL, PR])}
 tube.InstantiateSolutionArrays()
 tube.InstantiateSolutionArraysConservatives()

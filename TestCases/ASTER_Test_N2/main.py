@@ -7,7 +7,7 @@ import CoolProp.CoolProp as CP
 INPUT PARAMETERS FOR THE SHOCK-TUBE PROBLEM
 """
 LENGTH = 3.6                            # minimal length to include the three pressure probes (K1/K2/K3)
-NX = 1000                               # number of discretization points
+NX = 100                                # number of discretization points
 TIME_MAX = 5.0E-3                       # adjust as needed
 TL, TR = 645.15, 573.15                 # left and right initial temperatures
 UL, UR = 0.0, 0.0                       # left and right initial velocities
@@ -17,6 +17,7 @@ BOUNDARY_CONDITIONS = 'transparent'     # to mimic the effect of the discharge n
 FLUID = 'N2'                            # fluid name following coolprop
 FLUID_MODEL = 'ideal'                   # ideal or real gas model
 FLUID_GAMMA = 1.4
+FLUID_GAS_CONSTANT = 296.80
 
 
 
@@ -33,7 +34,7 @@ CFLmax = 0.9  # reduce if needed
 dtMax = CFLmax* dx / Smax
 nt = int(TIME_MAX/dtMax)
 t = np.linspace(0, TIME_MAX, nt)
-tube = ShockTube(x, t, FLUID, FLUID_MODEL, FLUID_GAMMA)
+tube = ShockTube(x, t, FLUID, FLUID_MODEL, FLUID_GAMMA, FLUID_GAS_CONSTANT)
 inCondDict = {'Density': np.array([RHOL, RHOR]), 'Velocity': np.array([UL, UR]), 'Pressure': np.array([PL, PR])}
 tube.InstantiateSolutionArrays()
 tube.InstantiateSolutionArraysConservatives()
@@ -47,7 +48,7 @@ tube.SaveSolution(folder_name='solutions', file_name='ASTER_N2_%.3f' %TIME_MAX)
 # Plot the trend of pressure over time as measured by the Kulite sensors
 # Positions of the Kulite sensors of the ASTER from the diaphragm
 iNode_Kulite1 = int( NX* ((LENGTH/2) - 1.2) / LENGTH ) # Kulite 1 (1200 mm from diaphragm)
-iNode_Kulite2 = int( NX* ((LENGTH/2) - 1.6) / LENGTH ) # Kulite 2 (1600 mm from diaphragm)
+iNode_Kulite2 = int( NX* ((LENGTH/2) - 1.4) / LENGTH ) # Kulite 2 (1600 mm from diaphragm)
 iNode_Kulite3 = int( NX* ((LENGTH/2) - 1.8) / LENGTH ) # Kulite 3 (1800 mm from diaphragm)
 # print(iNode_Kulite1, iNode_Kulite2, iNode_Kulite3)
 

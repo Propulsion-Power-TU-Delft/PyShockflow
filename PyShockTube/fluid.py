@@ -7,8 +7,9 @@ class FluidIdeal():
     """
     Ideal Fluid Class, where thermodynamic properties and transformation are computed with ideal gas laws
     """
-    def __init__(self, gmma):
+    def __init__(self, gmma, Rgas):
         self.gmma = gmma
+        self.Rgas = Rgas
     
     def ComputeStaticEnergy_p_rho(self, p, rho):
         return (p / (self.gmma - 1) / rho)
@@ -18,6 +19,9 @@ class FluidIdeal():
     
     def ComputeSoundSpeed_p_rho(self, p, rho):
         return np.sqrt(self.gmma*p/rho)
+
+    def ComputeTemperature_p_rho(self, p, rho):
+        return (p/rho)/self.Rgas
 
 class FluidReal():
     """

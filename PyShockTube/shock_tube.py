@@ -22,7 +22,7 @@ class ShockTube:
 
         t: array_like, time instants of the simulation
 
-        *fluid_props: property of the fluid to use (fluid name, fluid model, fluid gamma)
+        *fluid_props: property of the fluid to use (fluid name, fluid model, fluid gamma, fluid constant)
 
         Returns
         -------
@@ -53,8 +53,10 @@ class ShockTube:
         if fluid_props[1].lower()=='ideal':
             self.fluid_model = 'ideal'
             self.gmma = fluid_props[2]
+            self.Rgas = fluid_props[3]
             print("Fluid cp/cv ratio [-]:                       %.2e" %self.gmma)
-            self.fluid = FluidIdeal(self.gmma)
+            print("Fluid gas constant [J/kgK]:                  %.2e" %self.Rgas)
+            self.fluid = FluidIdeal(self.gmma,self.Rgas)
         elif fluid_props[1].lower()=='real':
             assert(len(fluid_props)>=2)
             self.fluid_model = 'real'
@@ -556,19 +558,21 @@ class ShockTube:
 
     def SaveNodeSolutionToCSV(self, iNode, timeInstants, folder_name, file_name):
         """
-        Save the 'Pressure' array from the solution to a CSV file.
+        Save the 'Pressure' and 'Temperature' array from the solution to a CSV file.
         """
         file_path = folder_name + '/' + file_name + '.dat'
-        pressure_data = self.solution['Pressure'][iNode, :]  # Extract the pressure data (2D array)
+        pressure_data = self.solution['Pressure'][iNode, :]  # Extract the pressure data (1D array)
+        density_data = self.solution['Density'][iNode, :]  # Extract the density data (1D array)
+        temperature_data = self.fluid.ComputeTemperature_p_rho(pressure_data, density_data)
 
         with open(file_path, 'w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
             for value in range(len(timeInstants)):
-                writer.writerow([timeInstants[value], pressure_data[value]])
+                writer.writerow([timeInstants[value], pressure_data[value], temperature_data[value]])
             # writer.writerow(pressure_data)  # Write each row of the array to the CSV file
             # writer.writerow(timeInstants)  # Write each row of the array to the CSV file
 
-        print(f"Pressure data saved to {file_path}!")
+        print(f"Pressure and temperature data saved to {file_path}!")
 
     def MUSCL_Reconstruction(self, il, ir, it, limiter):
         """
