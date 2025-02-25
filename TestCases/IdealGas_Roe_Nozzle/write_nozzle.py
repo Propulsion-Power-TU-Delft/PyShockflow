@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-xStart = 0.3
-xEnd = 0.6
-A_throat = 0.6
+xStart = 0.9
+xEnd = 1.0
+A_throat = 0.7
 nPoints = 100
 
 x = np.linspace(xStart, xEnd, nPoints)

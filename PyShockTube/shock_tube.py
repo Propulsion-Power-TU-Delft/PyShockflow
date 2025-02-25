@@ -107,10 +107,6 @@ class ShockTube:
             raise ValueError('Unknown topology type')
         
         self.dAreaTude_dx = np.gradient(self.areaTube, self.xNodesVirt)
-        plt.figure()
-        plt.plot(self.xNodesVirt, self.areaTube)
-        plt.plot(self.xNodesVirt, self.dAreaTude_dx)
-        plt.show()
         
         
 
@@ -382,11 +378,16 @@ class ShockTube:
             for iFace in range(flux.shape[0]):
                 flux[iFace, :] = self.ComputeFluxVector(iFace, iFace+1, it-1, flux_method, high_order, limiter)
             
+            if self.topology.lower()=='nozzle':
+                source = self.ComputeSourceTerms(it-1)
+            else:
+                source = np.zeros((self.nNodesHalo,3))
+            
             # update the conservatives for every element
             for iNode in range(1, self.nNodesHalo-1):
-                cons['u1'][iNode, it] = cons['u1'][iNode, it-1] + dt/dx * (flux[iNode-1, 0] - flux[iNode, 0])
-                cons['u2'][iNode, it] = cons['u2'][iNode, it-1] + dt/dx * (flux[iNode-1, 1] - flux[iNode, 1])
-                cons['u3'][iNode, it] = cons['u3'][iNode, it-1] + dt/dx * (flux[iNode-1, 2] - flux[iNode, 2])
+                cons['u1'][iNode, it] = cons['u1'][iNode, it-1] + dt/dx * ((flux[iNode-1, 0] - flux[iNode, 0]) + source[iNode, 0]*dx)
+                cons['u2'][iNode, it] = cons['u2'][iNode, it-1] + dt/dx * ((flux[iNode-1, 1] - flux[iNode, 1]) + source[iNode, 1]*dx)
+                cons['u3'][iNode, it] = cons['u3'][iNode, it-1] + dt/dx * ((flux[iNode-1, 2] - flux[iNode, 2]) + source[iNode, 2]*dx)
 
             # update the primitives
             prim['Density'][1:-1, it], prim['Velocity'][1:-1, it], prim['Pressure'][1:-1, it], prim['Energy'][1:-1, it] = \
@@ -397,6 +398,15 @@ class ShockTube:
 
         print(" "*34 + "END SOLVER")
         print("="*80)
+    
+    
+    def ComputeSourceTerms(self, it):
+        source_terms = np.zeros((self.nNodesHalo,3))
+        source_terms[:,0] = - self.solution['Density'][:, it] * self.solution['Velocity'][:, it]*self.dAreaTude_dx/self.areaTube
+        source_terms[:,1] = - (self.solution['Density'][:, it] * self.solution['Velocity'][:, it]**2)*self.dAreaTude_dx/self.areaTube
+        source_terms[:,2] = - self.solution['Velocity'][:, it] *(self.solution['Energy'][:, it] + self.solution['Pressure'][:, it])*self.dAreaTude_dx/self.areaTube
+        return source_terms
+        
 
 
     def ComputeFluxVector(self, il, ir, it, flux_method, high_order, limiter):
@@ -525,6 +535,8 @@ class ShockTube:
         """
         Show animation of the results at all time instants
         """
+        
+        mach = self.solution['Velocity']/self.fluid.ComputeSoundSpeed_p_rho(self.solution['Pressure'], self.solution['Density'])
         def plot_limits(f, extension=0.05):
             max = f.max()
             min = f.min()
@@ -533,38 +545,69 @@ class ShockTube:
             return left, right
         
         if self.config.showAnimation():
-            fig, ax = plt.subplots(2, 2, figsize=(12, 8))
-            density_limits = plot_limits(self.solution['Density'])
-            velocity_limits = plot_limits(self.solution['Velocity'])
-            pressure_limits = plot_limits(self.solution['Pressure'])
-            energy_limits = plot_limits(self.solution['Energy'])
-            for it in range(self.nTime):
-                for row in ax:
-                    for col in row:
-                        col.cla()
-                ax[0, 0].plot(self.xNodesVirt, self.solution['Density'][:, it], '-C0o', ms=2)
-                ax[0, 0].set_ylabel(r'Density')
-                ax[0, 0].set_ylim(density_limits)
+            # fig, ax = plt.subplots(2, 2, figsize=(12, 8))
+            # density_limits = plot_limits(self.solution['Density'])
+            # velocity_limits = plot_limits(self.solution['Velocity'])
+            # pressure_limits = plot_limits(self.solution['Pressure'])
+            # energy_limits = plot_limits(self.solution['Energy'])
+            # mach_limitis = plot_limits(mach)
+            # for it in range(self.nTime):
+            #     for row in ax:
+            #         for col in row:
+            #             col.cla()
+            #     ax[0, 0].plot(self.xNodesVirt, self.solution['Density'][:, it], '-C0o', ms=2)
+            #     ax[0, 0].set_ylabel(r'Density [kg/m3]')
+            #     ax[0, 0].set_ylim(density_limits)
 
-                ax[0, 1].plot(self.xNodesVirt, self.solution['Velocity'][:, it], '-C1o', ms=2)
-                ax[0, 1].set_ylabel(r'Velocity')
-                ax[0, 1].set_ylim(velocity_limits)
+            #     ax[0, 1].plot(self.xNodesVirt, self.solution['Velocity'][:, it], '-C1o', ms=2)
+            #     ax[0, 1].set_ylabel(r'Velocity [m/s]')
+            #     ax[0, 1].set_ylim(velocity_limits)
 
-                ax[1, 0].plot(self.xNodesVirt, self.solution['Pressure'][:, it], '-C2o', ms=2)
-                ax[1, 0].set_ylabel(r'Pressure')
-                ax[1, 0].set_ylim(pressure_limits)
+            #     ax[1, 0].plot(self.xNodesVirt, self.solution['Pressure'][:, it], '-C2o', ms=2)
+            #     ax[1, 0].set_ylabel(r'Pressure [Pa]')
+            #     ax[1, 0].set_ylim(pressure_limits)
 
-                ax[1, 1].plot(self.xNodesVirt, self.solution['Energy'][:, it], '-C3o', ms=2)
-                ax[1, 1].set_ylabel(r'Energy')
-                ax[1, 1].set_ylim(energy_limits)
+            #     # ax[1, 1].plot(self.xNodesVirt, self.solution['Energy'][:, it], '-C3o', ms=2)
+            #     # ax[1, 1].set_ylabel(r'Energy')
+            #     # ax[1, 1].set_ylim(energy_limits)
+            #     ax[1, 1].plot(self.xNodesVirt, mach[:, it], '-C3o', ms=2)
+            #     ax[1, 1].set_ylabel(r'Mach [-]')
+            #     ax[1, 1].set_ylim(mach_limitis)
 
-                fig.suptitle('Time %.3f' % self.timeVec[it])
+            #     fig.suptitle('Time %.3e [s]' % self.timeVec[it])
 
-                for row in ax:
-                    for col in row:
-                        col.set_xlabel('x')
-                        col.grid(alpha=.3)
-                plt.pause(1e-3)
+            #     for row in ax:
+            #         for col in row:
+            #             col.set_xlabel('x')
+            #             col.grid(alpha=.3)
+            #     plt.pause(1e-3)
+            
+            
+            massflow = self.solution['Density'][-1,:]*self.solution['Velocity'][-1,:]
+            plt.figure()
+            plt.plot(self.timeVec, massflow)
+            plt.xlabel('Time [s]')
+            plt.ylabel('Mass flow exit [kg/s]')
+            plt.grid(alpha=.3)
+            
+            id_throat = np.where(self.areaTube==np.min(self.areaTube))[0][0]
+            
+            plt.figure()
+            plt.plot(self.timeVec, mach[-1,:], label='exit')
+            plt.plot(self.timeVec, mach[id_throat,:], label='throat')
+            plt.xlabel('Time [s]')
+            plt.ylabel('Mach [-]')
+            plt.grid(alpha=.3)
+            plt.legend()
+            
+            ni = mach.shape[0]
+            plt.figure()
+            plt.plot(self.timeVec, self.solution['Pressure'][2*ni//4,:], label='L/2')
+            plt.plot(self.timeVec, self.solution['Pressure'][3*ni//4,:], label='3L/4')
+            plt.xlabel('Time [s]')
+            plt.ylabel('Pressure [Pa]')
+            plt.grid(alpha=.3)
+            plt.legend()
             plt.show()
     
 
