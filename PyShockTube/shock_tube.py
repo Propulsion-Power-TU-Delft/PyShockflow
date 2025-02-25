@@ -39,6 +39,7 @@ class ShockTube:
         # print("Fluid treatment:                             %s" % fluid_props[1])
         
         self.config = config
+        self.topology = self.config.getTopology()
         
         # geometry
         self.nNodes = self.config.getNumberOfPoints()
@@ -96,6 +97,22 @@ class ShockTube:
         self.xNodesVirt[1:-1] = self.xNodes
         self.xNodesVirt[0] = self.xNodes[0]-self.dx
         self.xNodesVirt[-1] = self.xNodes[-1]+self.dx
+        
+        if self.topology.lower()=='default':
+            self.areaTube = np.zeros_like(self.xNodesVirt)+1
+        elif self.topology.lower()=='nozzle':
+            self.areaTube = self.readNozzleFile(self.xNodesVirt, self.config.getNozzleFilePath())
+            print('The simulation topology selected is nozzle. Reading the coordinates')
+        else:
+            raise ValueError('Unknown topology type')
+        
+        self.dAreaTude_dx = np.gradient(self.areaTube, self.xNodesVirt)
+        plt.figure()
+        plt.plot(self.xNodesVirt, self.areaTube)
+        plt.plot(self.xNodesVirt, self.dAreaTude_dx)
+        plt.show()
+        
+        
 
 
     def InstantiateSolutionArrays(self):
@@ -697,6 +714,16 @@ class ShockTube:
                 raise ValueError('Limiter not recognized!')
         
         return psi
+    
+    def readNozzleFile(self, xTube, filepath):
+        nozzleData = np.loadtxt(filepath, skiprows=1, delimiter=',', dtype=float)
+        nozzleX = nozzleData[:,0]
+        nozzleArea = nozzleData[:,1]
+        
+        # Linear interpolation with external filling set to 1
+        interpolatedNozzleArea = np.interp(xTube, nozzleX, nozzleArea, left=1, right=1)
+        return interpolatedNozzleArea
+        
 
 
 

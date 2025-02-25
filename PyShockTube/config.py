@@ -81,4 +81,13 @@ class Config:
         else:
             return False
     
+    def getTopology(self):
+        try:
+            return str(self.config_parser.get('GEOMETRY', 'TOPOLOGY')).lower()
+        except:
+            return 'default' 
+    
+    def getNozzleFilePath(self):
+        return str(self.config_parser.get('GEOMETRY', 'NOZZLE_FILEPATH'))
+    
     
