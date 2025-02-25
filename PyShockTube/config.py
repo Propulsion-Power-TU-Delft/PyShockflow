@@ -1,0 +1,84 @@
+import configparser
+import os
+
+class Config:
+    def __init__(self, config_file='input.ini'):
+        self.config_parser = configparser.ConfigParser()
+        self.config_parser.read(config_file)
+        
+    def get_config_value(self, section, option, default=None):
+        """
+        Helper method to retrieve a configuration value with a default fallback.
+        """
+        try:
+            return self.config_parser.get(section, option)
+        except (configparser.NoSectionError, configparser.NoOptionError):
+            return default
+    
+    def getNumberOfPoints(self):
+        return int(self.config_parser.get('SIMULATION', 'NUMBER_POINTS')) 
+    
+    def getLength(self):
+        return float(self.config_parser.get('GEOMETRY', 'LENGTH')) 
+    
+    def getPressureLeft(self):
+        return float(self.config_parser.get('SIMULATION', 'PRESSURE_LEFT')) 
+    
+    def getPressureRight(self):
+        return float(self.config_parser.get('SIMULATION', 'PRESSURE_RIGHT')) 
+    
+    def getDensityLeft(self):
+        return float(self.config_parser.get('SIMULATION', 'DENSITY_LEFT')) 
+    
+    def getDensityRight(self):
+        return float(self.config_parser.get('SIMULATION', 'DENSITY_RIGHT')) 
+    
+    def getVelocityLeft(self):
+        return float(self.config_parser.get('SIMULATION', 'VELOCITY_LEFT')) 
+    
+    def getVelocityRight(self):
+        return float(self.config_parser.get('SIMULATION', 'VELOCITY_RIGHT')) 
+    
+    def getCFLMax(self):
+        return float(self.config_parser.get('SIMULATION', 'CFL_MAX')) 
+    
+    def getTimeMax(self):
+        return float(self.config_parser.get('SIMULATION', 'TIME_MAX')) 
+    
+    def getFluidName(self):
+        return str(self.config_parser.get('FLUID', 'FLUID_NAME')).lower() 
+    
+    def getFluidModel(self):
+        return str(self.config_parser.get('FLUID', 'FLUID_MODEL')).lower() 
+    
+    def getFluidGamma(self):
+        return float(self.config_parser.get('FLUID', 'FLUID_GAMMA'))
+    
+    def getGasRConstant(self):
+        return float(self.config_parser.get('FLUID', 'GAS_R_CONSTANT'))
+    
+    def getInterfaceLocation(self):
+        return float(self.config_parser.get('GEOMETRY', 'INTERFACE_LOCATION'))
+    
+    def getBoundaryConditions(self):
+        left = str(self.config_parser.get('SIMULATION', 'BOUNDARY_CONDITION_LEFT')).lower() 
+        right = str(self.config_parser.get('SIMULATION', 'BOUNDARY_CONDITION_RIGHT')).lower() 
+        return (left, right)
+    
+    def getNumericalScheme(self):
+        return str(self.config_parser.get('SIMULATION', 'NUMERICAL_SCHEME')).lower() 
+    
+    def getOutputFolder(self):
+        return str(self.config_parser.get('OUTPUT', 'FOLDER_NAME')) 
+    
+    def getOutputFileName(self):
+        return str(self.config_parser.get('OUTPUT', 'FILE_NAME')) 
+    
+    def showAnimation(self):
+        res = str(self.config_parser.get('OUTPUT', 'SHOW_ANIMATION')).lower() 
+        if res=='yes' or res=='true':
+            return True
+        else:
+            return False
+    
+    
