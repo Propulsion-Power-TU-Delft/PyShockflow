@@ -1,5 +1,3 @@
-import matplotlib.pyplot as plt
-import numpy as np
 from PyShockTube.shock_tube import ShockTube
 from PyShockTube.config import Config
 
