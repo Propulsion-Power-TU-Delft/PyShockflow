@@ -7,7 +7,7 @@ import os
 #########################     INPUT         #########################
 
 picklePath = 'ASTER_D6_0.06.pik'            # Path to the pickle file of the simulation
-maxLength = 1000                            # choose how many snapshots you want to visualize (must be < than total snapshots of simulation)
+maxLength = 100                             # choose how many snapshots you want to visualize (must be < than total snapshots of simulation)
 
 #video settings
 FPS = 30                                    # frames per second

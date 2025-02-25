@@ -23,6 +23,15 @@ class FluidIdeal():
     def ComputeTemperature_p_rho(self, p, rho):
         return (p/rho)/self.Rgas
 
+    def ComputeEntropy_p_rho(self, p, rho):
+        return p/rho**self.gmma
+
+    def ComputeFunDerGamma_p_rho(self, p, rho):
+        return 0.5*(self.gmma+1)
+
+    def ComputeComprFactorZ_p_rho(self, p, rho):
+        return 1
+
 class FluidReal():
     """
     Real Fluid Class, where thermodynamic properties and transformations are taken from coolprop
@@ -62,3 +71,15 @@ class FluidReal():
     def ComputeTemperature_p_rho(self, p, rho):
         T = CP.PropsSI('T', 'P', p, 'D', rho, self.fluid_name)
         return T
+
+    def ComputeEntropy_p_rho(self, p, rho):
+        s = CP.PropsSI('S', 'P', p, 'D', rho, self.fluid_name)
+        return s
+
+    def ComputeFunDerGamma_p_rho(self, p, rho):
+        G = CP.PropsSI('FUNDAMENTAL_DERIVATIVE_OF_GAS_DYNAMICS', 'P', p, 'D', rho, self.fluid_name)
+        return G
+
+    def ComputeComprFactorZ_p_rho(self, p, rho):
+        Z = CP.PropsSI('Z', 'P', p, 'D', rho, self.fluid_name)
+        return Z
