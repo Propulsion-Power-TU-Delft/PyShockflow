@@ -535,8 +535,11 @@ class ShockTube:
         """
         Show animation of the results at all time instants
         """
-        
-        mach = self.solution['Velocity']/self.fluid.ComputeSoundSpeed_p_rho(self.solution['Pressure'], self.solution['Density'])
+        ni, nt = self.solution['Density'].shape
+        mach = np.zeros((ni, nt))
+        for i in range(ni):
+            for t in range(nt):
+                mach[i,t] = self.solution['Velocity'][i,t]/self.fluid.ComputeSoundSpeed_p_rho(self.solution['Pressure'][i,t], self.solution['Density'][i,t])
         def plot_limits(f, extension=0.05):
             max = f.max()
             min = f.min()
@@ -545,42 +548,42 @@ class ShockTube:
             return left, right
         
         if self.config.showAnimation():
-            # fig, ax = plt.subplots(2, 2, figsize=(12, 8))
-            # density_limits = plot_limits(self.solution['Density'])
-            # velocity_limits = plot_limits(self.solution['Velocity'])
-            # pressure_limits = plot_limits(self.solution['Pressure'])
-            # energy_limits = plot_limits(self.solution['Energy'])
-            # mach_limitis = plot_limits(mach)
-            # for it in range(self.nTime):
-            #     for row in ax:
-            #         for col in row:
-            #             col.cla()
-            #     ax[0, 0].plot(self.xNodesVirt, self.solution['Density'][:, it], '-C0o', ms=2)
-            #     ax[0, 0].set_ylabel(r'Density [kg/m3]')
-            #     ax[0, 0].set_ylim(density_limits)
+            fig, ax = plt.subplots(2, 2, figsize=(12, 8))
+            density_limits = plot_limits(self.solution['Density'])
+            velocity_limits = plot_limits(self.solution['Velocity'])
+            pressure_limits = plot_limits(self.solution['Pressure'])
+            energy_limits = plot_limits(self.solution['Energy'])
+            mach_limitis = plot_limits(mach)
+            for it in range(self.nTime):
+                for row in ax:
+                    for col in row:
+                        col.cla()
+                ax[0, 0].plot(self.xNodesVirt, self.solution['Density'][:, it], '-C0o', ms=2)
+                ax[0, 0].set_ylabel(r'Density [kg/m3]')
+                ax[0, 0].set_ylim(density_limits)
 
-            #     ax[0, 1].plot(self.xNodesVirt, self.solution['Velocity'][:, it], '-C1o', ms=2)
-            #     ax[0, 1].set_ylabel(r'Velocity [m/s]')
-            #     ax[0, 1].set_ylim(velocity_limits)
+                ax[0, 1].plot(self.xNodesVirt, self.solution['Velocity'][:, it], '-C1o', ms=2)
+                ax[0, 1].set_ylabel(r'Velocity [m/s]')
+                ax[0, 1].set_ylim(velocity_limits)
 
-            #     ax[1, 0].plot(self.xNodesVirt, self.solution['Pressure'][:, it], '-C2o', ms=2)
-            #     ax[1, 0].set_ylabel(r'Pressure [Pa]')
-            #     ax[1, 0].set_ylim(pressure_limits)
+                ax[1, 0].plot(self.xNodesVirt, self.solution['Pressure'][:, it], '-C2o', ms=2)
+                ax[1, 0].set_ylabel(r'Pressure [Pa]')
+                ax[1, 0].set_ylim(pressure_limits)
 
-            #     # ax[1, 1].plot(self.xNodesVirt, self.solution['Energy'][:, it], '-C3o', ms=2)
-            #     # ax[1, 1].set_ylabel(r'Energy')
-            #     # ax[1, 1].set_ylim(energy_limits)
-            #     ax[1, 1].plot(self.xNodesVirt, mach[:, it], '-C3o', ms=2)
-            #     ax[1, 1].set_ylabel(r'Mach [-]')
-            #     ax[1, 1].set_ylim(mach_limitis)
+                # ax[1, 1].plot(self.xNodesVirt, self.solution['Energy'][:, it], '-C3o', ms=2)
+                # ax[1, 1].set_ylabel(r'Energy')
+                # ax[1, 1].set_ylim(energy_limits)
+                ax[1, 1].plot(self.xNodesVirt, mach[:, it], '-C3o', ms=2)
+                ax[1, 1].set_ylabel(r'Mach [-]')
+                ax[1, 1].set_ylim(mach_limitis)
 
-            #     fig.suptitle('Time %.3e [s]' % self.timeVec[it])
+                fig.suptitle('Time %.3e [s]' % self.timeVec[it])
 
-            #     for row in ax:
-            #         for col in row:
-            #             col.set_xlabel('x')
-            #             col.grid(alpha=.3)
-            #     plt.pause(1e-3)
+                for row in ax:
+                    for col in row:
+                        col.set_xlabel('x')
+                        col.grid(alpha=.3)
+                plt.pause(1e-3)
             
             
             massflow = self.solution['Density'][-1,:]*self.solution['Velocity'][-1,:]

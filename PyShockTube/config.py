@@ -46,7 +46,7 @@ class Config:
         return float(self.config_parser.get('SIMULATION', 'TIME_MAX')) 
     
     def getFluidName(self):
-        return str(self.config_parser.get('FLUID', 'FLUID_NAME')).lower() 
+        return str(self.config_parser.get('FLUID', 'FLUID_NAME'))
     
     def getFluidModel(self):
         return str(self.config_parser.get('FLUID', 'FLUID_MODEL')).lower() 
