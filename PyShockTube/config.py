@@ -33,6 +33,12 @@ class Config:
     def getDensityRight(self):
         return float(self.config_parser.get('SIMULATION', 'DENSITY_RIGHT')) 
     
+    def getTemperatureLeft(self):
+        return float(self.config_parser.get('SIMULATION', 'TEMPERATURE_LEFT')) 
+    
+    def getTemperatureRight(self):
+        return float(self.config_parser.get('SIMULATION', 'TEMPERATURE_RIGHT')) 
+    
     def getVelocityLeft(self):
         return float(self.config_parser.get('SIMULATION', 'VELOCITY_LEFT')) 
     
@@ -67,6 +73,12 @@ class Config:
     
     def getNumericalScheme(self):
         return str(self.config_parser.get('SIMULATION', 'NUMERICAL_SCHEME')).lower() 
+    
+    # def getTimeStepMethod(self):
+    #     try:
+    #         return str(self.config_parser.get('SIMULATION', 'TIME_STEP_METHOD')).lower()
+    #     except:
+    #         return 'constant'
     
     def getOutputFolder(self):
         return str(self.config_parser.get('OUTPUT', 'FOLDER_NAME')) 
