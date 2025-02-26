@@ -690,7 +690,7 @@ class ShockTube:
         folder_name = self.config.getOutputFolder()
         os.makedirs(folder_name, exist_ok=True)
         file_name = self.config.getOutputFileName()
-        full_path = folder_name+'/'+file_name+'_%.6f.pik' %(self.timeMax)
+        full_path = folder_name+'/'+file_name+'_NX_%i_TMAX_%.6f.pik' %(self.nNodes, self.timeMax)
         with open(full_path, 'wb') as file:
             pickle.dump(self, file)
         print('Pickle object with full solution saved to ' + full_path + ' !')
