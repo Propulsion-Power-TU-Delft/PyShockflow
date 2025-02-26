@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import os
 import pickle
 import csv
+import sys
 from PyShockTube.riemann_problem import RiemannProblem
 from PyShockTube.roe_scheme import RoeScheme_Base, RoeScheme_Generalized
 from PyShockTube.muscl_hancock import MusclHancock
@@ -109,8 +110,6 @@ class ShockTube:
         self.dAreaTude_dx = np.gradient(self.areaTube, self.xNodesVirt)
         
         
-
-
     def InstantiateSolutionArrays(self):
         """
         Instantiate the containers for the solutions. The first dimension is space, the second is time.
@@ -393,6 +392,8 @@ class ShockTube:
             prim['Density'][1:-1, it], prim['Velocity'][1:-1, it], prim['Pressure'][1:-1, it], prim['Energy'][1:-1, it] = \
                 GetPrimitivesFromConservatives(cons['u1'][1:-1, it], cons['u2'][1:-1, it], cons['u3'][1:-1, it], self.fluid)
             
+            self.checkSimulationStatus(it)
+            
             # set boundary conditions to update the ghost points for the new iteration
             self.SetBoundaryConditions(it)
 
@@ -406,6 +407,46 @@ class ShockTube:
         source_terms[:,1] = - (self.solution['Density'][:, it] * self.solution['Velocity'][:, it]**2)*self.dAreaTude_dx/self.areaTube
         source_terms[:,2] = - self.solution['Velocity'][:, it] *(self.solution['Energy'][:, it] + self.solution['Pressure'][:, it])*self.dAreaTude_dx/self.areaTube
         return source_terms
+    
+    
+    def checkSimulationStatus(self, it):
+        """
+        Check if nans or infs are detected and in that case stop the simulation and provide explanation
+        """
+        if np.any(np.isnan(self.solution['Density'])):
+            print()
+            print()
+            print("######################  SIMULATION DIVERGED ############################")
+            print('NaNs detected in density. Simulation stopped.')
+            cfl = self.ComputeMaxCFL(it-1) # use the previous time step to compute where the solution had CFL related problems
+            dum = it-1
+            while np.any(np.isnan(cfl)):
+                dum -=1
+                cfl = self.ComputeMaxCFL(dum)
+            print("Maximum CFL number found: %.3f" %(np.max(cfl)))
+            print("At location x: %.3f [m], at time: %.3e [s]" %(self.xNodesVirt[np.argmax(cfl)], self.timeVec[dum]))
+            print("Visualize the plot to understand critical locations, and decrease CFL_MAX input setting.")
+            print("###############################  EXIT ##################################")
+            print()
+            
+            plt.figure()
+            plt.plot(self.xNodes, cfl)
+            plt.xlabel('x [m]')
+            plt.ylabel('CFL [-]')
+            plt.grid(alpha=.3)
+            plt.show()
+            sys.exit()
+    
+    
+    def ComputeMaxCFL(self, it):
+        pressure = self.solution['Pressure'][1:-1,it]
+        density = self.solution['Density'][1:-1,it]
+        velocity = self.solution['Velocity'][1:-1,it]
+        soundSpeed = np.zeros_like(pressure)
+        for i in range(len(soundSpeed)):
+            soundSpeed = self.fluid.ComputeSoundSpeed_p_rho(pressure[i], density[i])
+        cfl = (np.abs(velocity)+soundSpeed)*self.dt/self.dx
+        return cfl
         
 
 
