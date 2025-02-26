@@ -1,24 +1,29 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-xStart = 1.8
-xEnd = 1.9
-A_throat = 0.7
-nPoints = 100
+"""
+GENERATE CSV FILE FOR A NOZZLE DESCRIBED BY A PARABOLIC SHAPE, WITH INLET AND OUTLET SECTION AREA OF SIZE 1, AND THROTTLE SECTION IN THE MIDDLE BETWEEN INLET AND OUTLET
+"""
+
+xStart = 1.8            # axial coordinate of nozzle inlet (same reference of the tube)
+xEnd = 1.9              # axial coordinate of nozzle outlet (same reference of the tube)
+A_throat = 0.7          # throat area of the nozzle (normalized by area of the tube)
+nPoints = 100           # number of points to describe the nozzle shape in the csv file
+
 
 x = np.linspace(xStart, xEnd, nPoints)
-
-# parabolic function with throat in the middle
 Acoeff = -4*(A_throat-1)
 Bcoeff = -Acoeff
 Ccoeff = 1
 z = (x-x[0])/(x[-1]-x[0])
 Area = Acoeff*z**2 + Bcoeff*z + Ccoeff
 
+# PLOT THE NOZZLE SHAPE
 plt.figure()
 plt.plot(x, Area)
-plt.xlabel('x')
-plt.ylabel('A')
+plt.xlabel('x [m]')
+plt.ylabel(r'$A/A_{tube}$ [-]')
+plt.grid(alpha=.3)
 
 with open('nozzle.csv', 'w') as file:
     file.write('x,A\n')
