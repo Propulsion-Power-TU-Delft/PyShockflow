@@ -19,26 +19,9 @@ density = tube.solution['Density'][1:-1,:]
 temperature = pressure/density/Rgas
 velocity = tube.solution['Velocity'][1:-1,:]
 mach = velocity/np.sqrt(gmma*pressure/density)
-momentum = density*velocity
 
-# plt.figure()
-# plt.plot(time, mach[-1,:])
-# plt.show()
 
-massflux = density[-1,:]*velocity[-1,:] # numerical value
-totPressure = pressure*(1+(gmma-1)/2*mach**2)**((gmma)/(gmma-1))
-totTemperature = temperature*(1+(gmma-1)/2*mach**2)
-massfluxTheoretical = totPressure*np.min(tube.areaTube)/(np.sqrt(gmma*Rgas*totTemperature))*gmma*(2/(gmma+1))**((gmma+1)/(2*gmma-2))
-
-ni,nt = mach.shape
-
-# plt.figure()
-# plt.plot(axialCoord, totPressure[:,-1])
-# plt.xlabel('x')
-# plt.ylabel('ptot')
-# plt.grid(alpha=.3)
-# plt.show()
-
+# CHECK THE MACH NUMBER
 machThroat = mach[np.argmin(tube.areaTube), :]
 areaRatioExit = tube.areaTube[-1]/np.min(tube.areaTube)
 def compute_alpha_residual(M):
@@ -46,21 +29,28 @@ def compute_alpha_residual(M):
 
 machExitTheoretical = fsolve(compute_alpha_residual, 1.5)
 plt.figure()
-plt.plot(time, machThroat, 'C0',label='Throat Section')
-plt.plot(time, np.zeros_like(time)+1, '--C0', label=r'Theoretical Steady Value: $M=1$')
-plt.plot(time, mach[-1,:], 'C1', label='Exit Section')
-plt.plot(time, np.zeros_like(time) + machExitTheoretical, '--C1', label=r'Theoretical Steady Value: $\frac{A}{A^*} = \alpha(M)$')
-plt.xlabel('t [s]')
+plt.plot(time*1e3, machThroat, 'C0',label='Throat Section')
+plt.plot(time*1e3, np.zeros_like(time)+1, '--C0', label=r'Theoretical Steady Value: $M=1$')
+plt.plot(time*1e3, mach[-1,:], 'C1', label='Exit Section')
+plt.plot(time*1e3, np.zeros_like(time) + machExitTheoretical, '--C1', label=r'Theoretical Steady Value: $\alpha(M) = \frac{A}{A^*}$')
+plt.xlabel(r'$t \ \rm{[ms]}$')
 plt.ylabel(r'$M \ \rm{[-]}$')
 plt.legend()
 plt.grid(alpha=.3)
 plt.savefig('mach.pdf', bbox_inches='tight')
 
+
+# CHECK THE MASS FLOW RATE
+massflux = density[-1,:]*velocity[-1,:] # numerical value
+totPressure = pressure*(1+(gmma-1)/2*mach**2)**((gmma)/(gmma-1))
+totTemperature = temperature*(1+(gmma-1)/2*mach**2)
+massfluxTheoretical = totPressure*np.min(tube.areaTube)/(np.sqrt(gmma*Rgas*totTemperature))*gmma*(2/(gmma+1))**((gmma+1)/(2*gmma-2))
+
 plt.figure()
-plt.plot(time, massflux, label='Simulation')
-plt.plot(time, np.zeros_like(time) + massfluxTheoretical[-1,-1], '--r', label=r'Theoretical Steady Value: $\dot{m}=\frac{P_t}{\sqrt{\gamma R T_t}} \cdot f(\gamma)$')
-plt.xlabel('t [s]')
-plt.ylabel(r'$\dot{m}_{EXIT} \ \rm{[kg/m^2/s]}$')
+plt.plot(time*1e3, massflux, label='Simulation')
+plt.plot(time*1e3, np.zeros_like(time) + massfluxTheoretical[-1,-1], '--r', label=r'Theoretical Steady Value: $\dot{m}=\frac{P_t A^*}{\sqrt{\gamma R T_t}} \cdot f(\gamma)$')
+plt.xlabel(r'$t \ \rm{[ms]}$')
+plt.ylabel(r'$\dot{m}_{EXIT} \ \rm{[kg/s]}$')
 plt.legend()
 plt.grid(alpha=.3)
 plt.savefig('massflow.pdf', bbox_inches='tight')
