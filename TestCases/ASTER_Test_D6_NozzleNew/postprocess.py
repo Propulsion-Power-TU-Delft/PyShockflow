@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
 
-with open('Results/ASTER_D6_NX_500_TMAX_0.060000.pik', 'rb') as file:
+with open('Results/ASTER_D6_NX_250_TMAX_0.060000.pik', 'rb') as file:
     tube = pickle.load(file)
     
 gmma = 1.4
