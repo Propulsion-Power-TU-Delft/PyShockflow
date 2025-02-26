@@ -41,6 +41,16 @@ class ShockTube:
         
         self.config = config
         self.topology = self.config.getTopology()
+        self.fluid_name = self.config.getFluidName()
+        self.fluid_model = self.config.getFluidModel()
+        if self.fluid_model.lower()=='ideal':
+            self.gmma = self.config.getFluidGamma()
+            self.Rgas = self.config.getGasRConstant()
+            print("Fluid cp/cv ratio [-]:                       %.2e" %self.gmma)
+            print("Fluid gas constant [J/kgK]:                  %.2e" %self.Rgas)
+            self.fluid = FluidIdeal(self.gmma,self.Rgas)
+        elif self.fluid_model.lower()=='real':
+            self.fluid = FluidReal(self.fluid_name)
         
         # geometry
         self.nNodes = self.config.getNumberOfPoints()
@@ -51,8 +61,14 @@ class ShockTube:
         # fluid initial states
         self.pressureLeft = self.config.getPressureLeft()
         self.pressureRight = self.config.getPressureRight()
-        self.densityLeft = self.config.getDensityLeft()
-        self.densityRight = self.config.getDensityRight()
+        try:
+            self.densityLeft = self.config.getDensityLeft()
+            self.densityRight = self.config.getDensityRight()
+        except:
+            temperatureLeft = self.config.getTemperatureLeft()
+            temperatureRight = self.config.getTemperatureRight()
+            self.densityLeft = self.fluid.ComputeDensity_p_T(self.pressureLeft, temperatureLeft)
+            self.densityRight = self.fluid.ComputeDensity_p_T(self.pressureRight, temperatureRight)
         self.velocityLeft = self.config.getVelocityLeft()
         self.velocityRight = self.config.getVelocityRight()
         
@@ -65,16 +81,7 @@ class ShockTube:
         self.timeVec = np.linspace(0, self.timeMax, nt)
         self.dt = self.timeVec[1]-self.timeVec[0]
         self.nTime = len(self.timeVec)
-        self.fluid_name = self.config.getFluidName()
-        self.fluid_model = self.config.getFluidModel()
-        if self.fluid_model.lower()=='ideal':
-            self.gmma = self.config.getFluidGamma()
-            self.Rgas = self.config.getGasRConstant()
-            print("Fluid cp/cv ratio [-]:                       %.2e" %self.gmma)
-            print("Fluid gas constant [J/kgK]:                  %.2e" %self.Rgas)
-            self.fluid = FluidIdeal(self.gmma,self.Rgas)
-        elif self.fluid_model.lower()=='real':
-            self.fluid = FluidReal(self.fluid_name)
+        
         
         self.BCtype = self.config.getBoundaryConditions()
             
@@ -402,10 +409,11 @@ class ShockTube:
     
     
     def ComputeSourceTerms(self, it):
+        totalEnergy = self.solution['Energy'][:, it] + 0.5*self.solution['Velocity'][:,it]**2
         source_terms = np.zeros((self.nNodesHalo,3))
         source_terms[:,0] = - self.solution['Density'][:, it] * self.solution['Velocity'][:, it]*self.dAreaTude_dx/self.areaTube
         source_terms[:,1] = - (self.solution['Density'][:, it] * self.solution['Velocity'][:, it]**2)*self.dAreaTude_dx/self.areaTube
-        source_terms[:,2] = - self.solution['Velocity'][:, it] *(self.solution['Energy'][:, it] + self.solution['Pressure'][:, it])*self.dAreaTude_dx/self.areaTube
+        source_terms[:,2] = - self.solution['Velocity'][:, it] *(self.solution['Density'][:, it]*totalEnergy + self.solution['Pressure'][:, it])*self.dAreaTude_dx/self.areaTube
         return source_terms
     
     
@@ -625,33 +633,6 @@ class ShockTube:
                         col.set_xlabel('x')
                         col.grid(alpha=.3)
                 plt.pause(1e-3)
-            
-            
-            massflow = self.solution['Density'][-1,:]*self.solution['Velocity'][-1,:]
-            plt.figure()
-            plt.plot(self.timeVec, massflow)
-            plt.xlabel('Time [s]')
-            plt.ylabel('Mass flow exit [kg/s]')
-            plt.grid(alpha=.3)
-            
-            id_throat = np.where(self.areaTube==np.min(self.areaTube))[0][0]
-            
-            plt.figure()
-            plt.plot(self.timeVec, mach[-1,:], label='exit')
-            plt.plot(self.timeVec, mach[id_throat,:], label='throat')
-            plt.xlabel('Time [s]')
-            plt.ylabel('Mach [-]')
-            plt.grid(alpha=.3)
-            plt.legend()
-            
-            ni = mach.shape[0]
-            plt.figure()
-            plt.plot(self.timeVec, self.solution['Pressure'][2*ni//4,:], label='L/2')
-            plt.plot(self.timeVec, self.solution['Pressure'][3*ni//4,:], label='3L/4')
-            plt.xlabel('Time [s]')
-            plt.ylabel('Pressure [Pa]')
-            plt.grid(alpha=.3)
-            plt.legend()
             plt.show()
     
 
