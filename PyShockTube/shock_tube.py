@@ -25,20 +25,6 @@ class ShockTube:
         -------
         None
         """
-        print("\n" + "=" * 80)
-        print(" " * 25 + "🚀  WELCOME TO PYSHOCKTUBE 🚀")
-        print(" " * 18 + "Fluid Dynamics Simulation for Shock Tubes")
-        print("=" * 80)
-        
-        print()  
-        print("=" * 80)
-        print(" "*32 + "SIMULATION DATA")
-        # print("Length of the domain [m]:                    %.2e" % (x[-1] - x[0]))
-        # print("Number of points:                            %i" %len(x))
-        # print("Final time instant [s]:                      %.2e" % (t[-1]))
-        # print("Fluid name:                                  %s" % fluid_props[0])
-        # print("Fluid treatment:                             %s" % fluid_props[1])
-        
         self.config = config
         self.topology = self.config.getTopology()
         self.fluid_name = self.config.getFluidName()
@@ -82,10 +68,21 @@ class ShockTube:
         self.dt = self.timeVec[1]-self.timeVec[0]
         self.nTime = len(self.timeVec)
         
-        
-        self.BCtype = self.config.getBoundaryConditions()
-            
+        self.BCtype = self.config.getBoundaryConditions()    
         self.GenerateVirtualGeometry()
+        
+        print("\n" + "=" * 80)
+        print(" " * 25 + "🚀  WELCOME TO PYSHOCKTUBE 🚀")
+        print(" " * 18 + "Fluid Dynamics Simulation for Shock Tubes")
+        print("=" * 80)
+        print()  
+        print("=" * 80)
+        print(" "*32 + "SIMULATION DATA")
+        print("Length of the domain [m]:                    %.2e" % self.length)
+        print("Number of points:                            %i" % self.nNodes)
+        print("Final time instant [s]:                      %.2e" % self.timeMax)
+        print("Fluid name:                                  %s" % self.fluid_name)
+        print("Fluid treatment:                             %s" % self.fluid_model)
 
 
     def GenerateVirtualGeometry(self):
