@@ -23,7 +23,8 @@ with open(pickleFile, 'rb') as file:
 
 # ALIAS TO SOLUTION FIELDS (tube is the ShockTube object with the full space-time solution stored in it)
 axialCoord = tube.xNodes
-time = tube.timeVec
+time = tube.timeVec  
+timeShift = 10.31-0.00308                       # time-shift to reflect article figure
 pressure = tube.solution['Pressure'][1:-1,:]    # avoid Halo nodes
 density = tube.solution['Density'][1:-1,:]      # avoid Halo nodes
 velocity = tube.solution['Velocity'][1:-1,:]    # avoid Halo nodes
@@ -39,11 +40,11 @@ id3 = int(1.4/totalLength*ni)   # 1.6m from throat located at 3m -> 1.8m from th
 id4 = int(1.2/totalLength*ni)   # 1.8m from throat located at 3m -> 1.8m from the left end
 
 plt.figure()
-plt.plot(time*1e3, pressure[id1,:]/1e5, label='PT 1')
-plt.plot(time*1e3, pressure[id2,:]/1e5, label='PT 2')
-plt.plot(time*1e3, pressure[id3,:]/1e5, label='PT 3')
-plt.plot(time*1e3, pressure[id4,:]/1e5, label='PT 3')
-plt.xlabel(r'$t \ \rm{[ms]}$')
+plt.plot(time+timeShift, pressure[id1,:]/1e5, label='PT 1')
+plt.plot(time+timeShift, pressure[id2,:]/1e5, label='PT 2')
+plt.plot(time+timeShift, pressure[id3,:]/1e5, label='PT 3')
+plt.plot(time+timeShift, pressure[id4,:]/1e5, label='PT 3')
+plt.xlabel(r'$t \ \rm{[s]}$')
 plt.ylabel(r'$p \ \rm{[bar]}$')
 plt.grid(alpha=.3)
 plt.legend()
