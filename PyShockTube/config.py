@@ -3,6 +3,9 @@ import os
 
 class Config:
     def __init__(self, config_file='input.ini'):
+        if not os.path.exists(config_file):
+            raise FileNotFoundError(f"Config file '{config_file}' not found.")
+        
         self.config_parser = configparser.ConfigParser()
         self.config_parser.read(config_file)
         
@@ -92,6 +95,16 @@ class Config:
             return True
         else:
             return False
+    
+    def getMUSCLReconstruction(self):
+        try:
+            res = str(self.config_parser.get('SIMULATION', 'MUSCL_RECONSTRUCTION')).lower() 
+            if res=='yes' or res=='true':
+                return True
+            else:
+                return False
+        except:
+            return False # false by default
     
     def getTopology(self):
         try:

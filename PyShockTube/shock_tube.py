@@ -361,13 +361,13 @@ class ShockTube:
         impose high_order=True
         """
         flux_method = self.config.getNumericalScheme()
+        high_order = self.config.getMUSCLReconstruction()
+        
         print()
         print("="*80)
         print(" "*33 + "START SOLVER")
         print("Numerical flux method: %s" %(flux_method))
         print("MUSCL reconstruction: %s" %high_order)
-        # if high_order:
-        #     print("Limiter: %s" %(limiter))
         print()
 
         # short aliases

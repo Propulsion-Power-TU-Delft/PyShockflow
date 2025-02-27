@@ -6,7 +6,7 @@ from PyShockTube.shock_tube import ShockTube
 import os
 
 solFile = "solutions/co2_noentropyfix_500.pik"
-solFile_fix = "solutions/co2_entropyfix_500.pik"
+solFile_fix = "solutions/co2_entropyfix_NX_100_TMAX_0.050000.pik"
 solFile_high = "solutions/co2_entropyfix_100_highOrder.pik"
 outFolder = 'Pictures'
 os.makedirs(outFolder, exist_ok=True)
