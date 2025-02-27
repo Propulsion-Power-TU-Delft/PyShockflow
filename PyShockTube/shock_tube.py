@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import os
 import pickle
 import csv
+import sys
 from PyShockTube.riemann_problem import RiemannProblem
 from PyShockTube.roe_scheme import RoeScheme_Base, RoeScheme_Generalized
 from PyShockTube.muscl_hancock import MusclHancock
@@ -12,56 +13,76 @@ from PyShockTube.euler_functions import *
 
 
 class ShockTube:
-    def __init__(self, x, t, *fluid_props):
+    def __init__(self, config):
         """
         Initializes the problem with space and time arrays, along with additional fluid properties.
 
         Parameters
         ----------
-        x: array_like, x coordinates of the 1D-grid
-
-        t: array_like, time instants of the simulation
-
-        *fluid_props: property of the fluid to use (fluid name, fluid model, fluid gamma, fluid constant)
+        config: configuration file object
 
         Returns
         -------
         None
         """
+        self.config = config
+        self.topology = self.config.getTopology()
+        self.fluid_name = self.config.getFluidName()
+        self.fluid_model = self.config.getFluidModel()
+        if self.fluid_model.lower()=='ideal':
+            self.gmma = self.config.getFluidGamma()
+            self.Rgas = self.config.getGasRConstant()
+            print("Fluid cp/cv ratio [-]:                       %.2e" %self.gmma)
+            print("Fluid gas constant [J/kgK]:                  %.2e" %self.Rgas)
+            self.fluid = FluidIdeal(self.gmma,self.Rgas)
+        elif self.fluid_model.lower()=='real':
+            self.fluid = FluidReal(self.fluid_name)
+        
+        # geometry
+        self.nNodes = self.config.getNumberOfPoints()
+        self.length = self.config.getLength()
+        self.xNodes = np.linspace(0, self.length, self.nNodes)
+        self.dx = self.xNodes[1]-self.xNodes[0]
+        
+        # fluid initial states
+        self.pressureLeft = self.config.getPressureLeft()
+        self.pressureRight = self.config.getPressureRight()
+        try:
+            self.densityLeft = self.config.getDensityLeft()
+            self.densityRight = self.config.getDensityRight()
+        except:
+            temperatureLeft = self.config.getTemperatureLeft()
+            temperatureRight = self.config.getTemperatureRight()
+            self.densityLeft = self.fluid.ComputeDensity_p_T(self.pressureLeft, temperatureLeft)
+            self.densityRight = self.fluid.ComputeDensity_p_T(self.pressureRight, temperatureRight)
+        self.velocityLeft = self.config.getVelocityLeft()
+        self.velocityRight = self.config.getVelocityRight()
+        
+        # compute dt
+        Smax = np.sqrt(1.4*np.max([self.pressureLeft, self.pressureRight])/np.min([self.densityLeft, self.densityRight]))+np.max([self.velocityLeft, self.velocityRight])  # brutal approximation max eigenvalue
+        CFLmax = self.config.getCFLMax() 
+        dtMax = CFLmax * self.dx / Smax
+        self.timeMax = self.config.getTimeMax()
+        nt = int(self.timeMax/dtMax)        
+        self.timeVec = np.linspace(0, self.timeMax, nt)
+        self.dt = self.timeVec[1]-self.timeVec[0]
+        self.nTime = len(self.timeVec)
+        
+        self.BCtype = self.config.getBoundaryConditions()    
+        self.GenerateVirtualGeometry()
+        
         print("\n" + "=" * 80)
         print(" " * 25 + "🚀  WELCOME TO PYSHOCKTUBE 🚀")
         print(" " * 18 + "Fluid Dynamics Simulation for Shock Tubes")
         print("=" * 80)
-        
         print()  
         print("=" * 80)
         print(" "*32 + "SIMULATION DATA")
-        print("Length of the domain [m]:                    %.2e" % (x[-1] - x[0]))
-        print("Number of points:                            %i" %len(x))
-        print("Final time instant [s]:                      %.2e" % (t[-1]))
-        print("Fluid name:                                  %s" % fluid_props[0])
-        print("Fluid treatment:                             %s" % fluid_props[1])
-        
-
-        self.xNodes = x
-        self.nNodes = len(x)
-        self.dx = x[1]-x[0]
-        self.timeVec = t
-        self.dt = t[1]-t[0]
-        self.nTime = len(t)
-        self.fluid_name = fluid_props[0]
-        if fluid_props[1].lower()=='ideal':
-            self.fluid_model = 'ideal'
-            self.gmma = fluid_props[2]
-            self.Rgas = fluid_props[3]
-            print("Fluid cp/cv ratio [-]:                       %.2e" %self.gmma)
-            print("Fluid gas constant [J/kgK]:                  %.2e" %self.Rgas)
-            self.fluid = FluidIdeal(self.gmma,self.Rgas)
-        elif fluid_props[1].lower()=='real':
-            assert(len(fluid_props)>=2)
-            self.fluid_model = 'real'
-            self.fluid = FluidReal(self.fluid_name)
-        self.GenerateVirtualGeometry()
+        print("Length of the domain [m]:                    %.2e" % self.length)
+        print("Number of points:                            %i" % self.nNodes)
+        print("Final time instant [s]:                      %.2e" % self.timeMax)
+        print("Fluid name:                                  %s" % self.fluid_name)
+        print("Fluid treatment:                             %s" % self.fluid_model)
 
 
     def GenerateVirtualGeometry(self):
@@ -81,8 +102,18 @@ class ShockTube:
         self.xNodesVirt[1:-1] = self.xNodes
         self.xNodesVirt[0] = self.xNodes[0]-self.dx
         self.xNodesVirt[-1] = self.xNodes[-1]+self.dx
-
-
+        
+        if self.topology.lower()=='default':
+            self.areaTube = np.zeros_like(self.xNodesVirt)+1
+        elif self.topology.lower()=='nozzle':
+            self.areaTube = self.readNozzleFile(self.xNodesVirt, self.config.getNozzleFilePath())
+            print('The simulation topology selected is nozzle. Reading the coordinates')
+        else:
+            raise ValueError('Unknown topology type')
+        
+        self.dAreaTude_dx = np.gradient(self.areaTube, self.xNodesVirt)
+        
+        
     def InstantiateSolutionArrays(self):
         """
         Instantiate the containers for the solutions. The first dimension is space, the second is time.
@@ -103,17 +134,19 @@ class ShockTube:
             self.solutionCons[name] = np.zeros((self.nNodesHalo, self.nTime))
         
 
-    def InitialConditionsLeftRight(self, dictIn):
+    def InitialConditionsLeftRight(self):
         """
         Initialize the conditions based on initial state, defined by right and left values
         """
-        print("Initial L/R density values [kg/m3]:          (%.2e, %.2e)" %(dictIn['Density'][0], dictIn['Density'][1]))
-        print("Initial L/R velocity values [m/s]:           (%.2e, %.2e)" %(dictIn['Velocity'][0], dictIn['Velocity'][1]))
-        print("Initial L/R pressure values [bar]:           (%.2e, %.2e)" %(dictIn['Pressure'][0]/1e5, dictIn['Pressure'][1]/1e5))
+        initialConditions = {'Density': np.array([self.densityLeft, self.densityRight]), 'Velocity': np.array([self.velocityLeft, self.velocityRight]), 'Pressure': np.array([self.pressureLeft, self.pressureRight])}
+        
+        print("Initial L/R density values [kg/m3]:          (%.2e, %.2e)" %(initialConditions['Density'][0], initialConditions['Density'][1]))
+        print("Initial L/R velocity values [m/s]:           (%.2e, %.2e)" %(initialConditions['Velocity'][0], initialConditions['Velocity'][1]))
+        print("Initial L/R pressure values [bar]:           (%.2e, %.2e)" %(initialConditions['Pressure'][0]/1e5, initialConditions['Pressure'][1]/1e5))
 
-        dictIn['Energy'] = self.fluid.ComputeStaticEnergy_p_rho(dictIn['Pressure'], dictIn['Density'])
+        initialConditions['Energy'] = self.fluid.ComputeStaticEnergy_p_rho(initialConditions['Pressure'], initialConditions['Density'])
         for name in self.solutionNames:
-            self.solution[name][:, 0] = self.CopyInitialState(dictIn[name][0], dictIn[name][1])
+            self.solution[name][:, 0] = self.CopyInitialState(initialConditions[name][0], initialConditions[name][1])
     
 
     def InitialConditionsArrays(self, dictIn):
@@ -132,10 +165,13 @@ class ShockTube:
         :param fR:
         :return:
         """
-        xmean = 0.5 * (self.xNodesVirt[-1] + self.xNodesVirt[0])
+        xInterface = self.config.getInterfaceLocation()
+        assert(xInterface>0), f"The interface must be located within 0 and {self.length}"
+        assert(xInterface<self.length), f"The interface must be located within 0 and {self.length}"
+        
         f = np.zeros_like(self.xNodesVirt)
         for i in range(len(self.xNodesVirt)):
-            if self.xNodesVirt[i] <= xmean:
+            if self.xNodesVirt[i] <= xInterface:
                 f[i] = fL
             else:
                 f[i] = fR
@@ -225,15 +261,11 @@ class ShockTube:
             plt.savefig(folder_name + '/' + file_name + '_conservatives.pdf', bbox_inches='tight')
 
 
-    def SetBoundaryConditions(self, BCs, it):
+    def SetBoundaryConditions(self, it):
         """
         Set the correct boundary condition type (`reflective`, `transparent`, or `periodic`)
         """
-        self.BCtype = BCs
-        if isinstance(self.BCtype, list):
-            pass
-        else:
-            self.BCtype = [BCs, BCs]
+        
 
         if it==0:
             print("Boundary Conditions Left:                    %s" %self.BCtype[0])
@@ -319,19 +351,20 @@ class ShockTube:
             raise ValueError('Unknown location specified')
 
 
-    def SolveSystem(self, flux_method, high_order=False, limiter='Van Albada'):
+    def SolveSystem(self, high_order=False, limiter='Van Albada'):
         """
         Solve the equations explicitly in time (forward Euler) using a certain flux_method (`Godunov`, `Roe`, `WAF`). high_order
         specifies if applying or not high order reconstruction with limiters. At the moment only type one is working -> simply
         impose high_order=True
         """
+        flux_method = self.config.getNumericalScheme()
+        high_order = self.config.getMUSCLReconstruction()
+        
         print()
         print("="*80)
         print(" "*33 + "START SOLVER")
         print("Numerical flux method: %s" %(flux_method))
         print("MUSCL reconstruction: %s" %high_order)
-        # if high_order:
-        #     print("Limiter: %s" %(limiter))
         print()
 
         # short aliases
@@ -348,21 +381,78 @@ class ShockTube:
             for iFace in range(flux.shape[0]):
                 flux[iFace, :] = self.ComputeFluxVector(iFace, iFace+1, it-1, flux_method, high_order, limiter)
             
+            if self.topology.lower()=='nozzle':
+                source = self.ComputeSourceTerms(it-1)
+            else:
+                source = np.zeros((self.nNodesHalo,3))
+            
             # update the conservatives for every element
             for iNode in range(1, self.nNodesHalo-1):
-                cons['u1'][iNode, it] = cons['u1'][iNode, it-1] + dt/dx * (flux[iNode-1, 0] - flux[iNode, 0])
-                cons['u2'][iNode, it] = cons['u2'][iNode, it-1] + dt/dx * (flux[iNode-1, 1] - flux[iNode, 1])
-                cons['u3'][iNode, it] = cons['u3'][iNode, it-1] + dt/dx * (flux[iNode-1, 2] - flux[iNode, 2])
+                cons['u1'][iNode, it] = cons['u1'][iNode, it-1] + dt/dx * ((flux[iNode-1, 0] - flux[iNode, 0]) + source[iNode, 0]*dx)
+                cons['u2'][iNode, it] = cons['u2'][iNode, it-1] + dt/dx * ((flux[iNode-1, 1] - flux[iNode, 1]) + source[iNode, 1]*dx)
+                cons['u3'][iNode, it] = cons['u3'][iNode, it-1] + dt/dx * ((flux[iNode-1, 2] - flux[iNode, 2]) + source[iNode, 2]*dx)
 
             # update the primitives
             prim['Density'][1:-1, it], prim['Velocity'][1:-1, it], prim['Pressure'][1:-1, it], prim['Energy'][1:-1, it] = \
                 GetPrimitivesFromConservatives(cons['u1'][1:-1, it], cons['u2'][1:-1, it], cons['u3'][1:-1, it], self.fluid)
             
+            self.checkSimulationStatus(it)
+            
             # set boundary conditions to update the ghost points for the new iteration
-            self.SetBoundaryConditions(self.BCtype, it)
+            self.SetBoundaryConditions(it)
 
         print(" "*34 + "END SOLVER")
         print("="*80)
+    
+    
+    def ComputeSourceTerms(self, it):
+        totalEnergy = self.solution['Energy'][:, it] + 0.5*self.solution['Velocity'][:,it]**2
+        source_terms = np.zeros((self.nNodesHalo,3))
+        source_terms[:,0] = - self.solution['Density'][:, it] * self.solution['Velocity'][:, it]*self.dAreaTude_dx/self.areaTube
+        source_terms[:,1] = - (self.solution['Density'][:, it] * self.solution['Velocity'][:, it]**2)*self.dAreaTude_dx/self.areaTube
+        source_terms[:,2] = - self.solution['Velocity'][:, it] *(self.solution['Density'][:, it]*totalEnergy + self.solution['Pressure'][:, it])*self.dAreaTude_dx/self.areaTube
+        return source_terms
+    
+    
+    def checkSimulationStatus(self, it):
+        """
+        Check if nans or infs are detected and in that case stop the simulation and provide explanation
+        """
+        if np.any(np.isnan(self.solution['Density'])):
+            print()
+            print()
+            print("######################  SIMULATION DIVERGED ############################")
+            print('NaNs detected in density. Simulation stopped.')
+            cfl = self.ComputeMaxCFL(it-1) # use the previous time step to compute where the solution had CFL related problems
+            dum = it-1
+            while np.any(np.isnan(cfl)):
+                dum -=1
+                cfl = self.ComputeMaxCFL(dum)
+            print("Maximum CFL number found: %.3f" %(np.max(cfl)))
+            print("At location x: %.3f [m], at time: %.3e [s]" %(self.xNodesVirt[np.argmax(cfl)], self.timeVec[dum]))
+            print("Visualize the plot to understand critical locations, and decrease CFL_MAX input setting.")
+            print("###############################  EXIT ##################################")
+            print()
+            
+            plt.figure()
+            plt.plot(self.xNodes, cfl)
+            plt.xlabel('x [m]')
+            plt.ylabel('CFL [-]')
+            plt.grid(alpha=.3)
+            plt.show()
+            sys.exit()
+    
+    
+    def ComputeMaxCFL(self, it):
+        pressure = self.solution['Pressure'][1:-1,it]
+        density = self.solution['Density'][1:-1,it]
+        velocity = self.solution['Velocity'][1:-1,it]
+        soundSpeed = np.zeros_like(pressure)
+        for i in range(len(soundSpeed)):
+            soundSpeed = self.fluid.ComputeSoundSpeed_p_rho(pressure[i], density[i])
+        cfl = (np.abs(velocity)+soundSpeed)*self.dt/self.dx
+        return cfl
+        
 
 
     def ComputeFluxVector(self, il, ir, it, flux_method, high_order, limiter):
@@ -491,30 +581,56 @@ class ShockTube:
         """
         Show animation of the results at all time instants
         """
-        fig, ax = plt.subplots(2, 2, figsize=(12, 8))
-        for it in range(self.nTime):
-            for row in ax:
-                for col in row:
-                    col.cla()
-            ax[0, 0].plot(self.xNodesVirt, self.solution['Density'][:, it], '-C0o', ms=2)
-            ax[0, 0].set_ylabel(r'Density')
+        ni, nt = self.solution['Density'].shape
+        mach = np.zeros((ni, nt))
+        for i in range(ni):
+            for t in range(nt):
+                mach[i,t] = self.solution['Velocity'][i,t]/self.fluid.ComputeSoundSpeed_p_rho(self.solution['Pressure'][i,t], self.solution['Density'][i,t])
+        def plot_limits(f, extension=0.05):
+            max = f.max()
+            min = f.min()
+            left = min-(max-min)*extension
+            right = max+(max-min)*extension
+            return left, right
+        
+        if self.config.showAnimation():
+            fig, ax = plt.subplots(2, 2, figsize=(12, 8))
+            density_limits = plot_limits(self.solution['Density'])
+            velocity_limits = plot_limits(self.solution['Velocity'])
+            pressure_limits = plot_limits(self.solution['Pressure'])
+            energy_limits = plot_limits(self.solution['Energy'])
+            mach_limitis = plot_limits(mach)
+            for it in range(self.nTime):
+                for row in ax:
+                    for col in row:
+                        col.cla()
+                ax[0, 0].plot(self.xNodesVirt, self.solution['Density'][:, it], '-C0o', ms=2)
+                ax[0, 0].set_ylabel(r'Density [kg/m3]')
+                ax[0, 0].set_ylim(density_limits)
 
-            ax[0, 1].plot(self.xNodesVirt, self.solution['Velocity'][:, it], '-C1o', ms=2)
-            ax[0, 1].set_ylabel(r'Velocity')
+                ax[0, 1].plot(self.xNodesVirt, self.solution['Velocity'][:, it], '-C1o', ms=2)
+                ax[0, 1].set_ylabel(r'Velocity [m/s]')
+                ax[0, 1].set_ylim(velocity_limits)
 
-            ax[1, 0].plot(self.xNodesVirt, self.solution['Pressure'][:, it], '-C2o', ms=2)
-            ax[1, 0].set_ylabel(r'Pressure')
+                ax[1, 0].plot(self.xNodesVirt, self.solution['Pressure'][:, it], '-C2o', ms=2)
+                ax[1, 0].set_ylabel(r'Pressure [Pa]')
+                ax[1, 0].set_ylim(pressure_limits)
 
-            ax[1, 1].plot(self.xNodesVirt, self.solution['Energy'][:, it], '-C3o', ms=2)
-            ax[1, 1].set_ylabel(r'Energy')
+                # ax[1, 1].plot(self.xNodesVirt, self.solution['Energy'][:, it], '-C3o', ms=2)
+                # ax[1, 1].set_ylabel(r'Energy')
+                # ax[1, 1].set_ylim(energy_limits)
+                ax[1, 1].plot(self.xNodesVirt, mach[:, it], '-C3o', ms=2)
+                ax[1, 1].set_ylabel(r'Mach [-]')
+                ax[1, 1].set_ylim(mach_limitis)
 
-            fig.suptitle('Time %.3f' % self.timeVec[it])
+                fig.suptitle('Time %.3e [s]' % self.timeVec[it])
 
-            for row in ax:
-                for col in row:
-                    col.set_xlabel('x')
-                    col.grid(alpha=.3)
-            plt.pause(1e-3)
+                for row in ax:
+                    for col in row:
+                        col.set_xlabel('x')
+                        col.grid(alpha=.3)
+                plt.pause(1e-3)
+            plt.show()
     
 
     def ShowContourAnimation(self):
@@ -564,15 +680,17 @@ class ShockTube:
             plt.pause(1e-3)
     
 
-    def SaveSolution(self, folder_name, file_name):
+    def SaveSolution(self):
         """
         Save the full object as a pickle for later use
         """
+        folder_name = self.config.getOutputFolder()
         os.makedirs(folder_name, exist_ok=True)
-        full_path = folder_name+'/'+file_name+'.pik'
+        file_name = self.config.getOutputFileName()
+        full_path = folder_name+'/'+file_name+'_NX_%i_TMAX_%.6f.pik' %(self.nNodes, self.timeMax)
         with open(full_path, 'wb') as file:
             pickle.dump(self, file)
-        print('Pickle file with solution saved to ' + full_path + ' !')
+        print('Pickle object with full solution saved to ' + full_path + ' !')
 
 
     def SaveNodeSolutionToCSV(self, iNode, timeInstants, folder_name, file_name):
@@ -664,6 +782,16 @@ class ShockTube:
                 raise ValueError('Limiter not recognized!')
         
         return psi
+    
+    def readNozzleFile(self, xTube, filepath):
+        nozzleData = np.loadtxt(filepath, skiprows=1, delimiter=',', dtype=float)
+        nozzleX = nozzleData[:,0]
+        nozzleArea = nozzleData[:,1]
+        
+        # Linear interpolation with external filling set to 1
+        interpolatedNozzleArea = np.interp(xTube, nozzleX, nozzleArea, left=1, right=1)
+        return interpolatedNozzleArea
+        
 
 
 

@@ -22,6 +22,9 @@ class FluidIdeal():
 
     def ComputeTemperature_p_rho(self, p, rho):
         return (p/rho)/self.Rgas
+    
+    def ComputeDensity_p_T(self, p, T):
+        return p/self.Rgas/T
 
     def ComputeEntropy_p_rho(self, p, rho):
         return p/rho**self.gmma
@@ -71,6 +74,10 @@ class FluidReal():
     def ComputeTemperature_p_rho(self, p, rho):
         T = CP.PropsSI('T', 'P', p, 'D', rho, self.fluid_name)
         return T
+    
+    def ComputeDensity_p_T(self, p, T):
+        rho = CP.PropsSI('D', 'P', p, 'T', T, self.fluid_name)
+        return rho
 
     def ComputeEntropy_p_rho(self, p, rho):
         s = CP.PropsSI('S', 'P', p, 'D', rho, self.fluid_name)

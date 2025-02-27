@@ -5,7 +5,7 @@ from PyShockTube.riemann_problem import RiemannProblem
 from PyShockTube.shock_tube import ShockTube
 import os
 
-solFile = "solutions/DG1.pik"
+solFile = "solutions/DG1_NX_250_TMAX_0.000573.pik"
 outFolder = 'Pictures'
 os.makedirs(outFolder, exist_ok=True)
 
