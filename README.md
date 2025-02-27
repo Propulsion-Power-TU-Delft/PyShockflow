@@ -30,26 +30,13 @@ cd pyshocktube
 pip install .
 ```
 
-* Navigate to the test cases folder (or create one), and run the main.py file:
+* Navigate to the test cases folder (or create one), and run the main.py file checking that points to the correct input file:
 ```bash
 python main.py
 ```
 
-* The input parameters are specified inside every `main.py` file, and should be quite easy to comprehend and modify. The legend is the following (SI units):
-```python
-LENGTH: length of the tube.
-NX: number of points for the space-discretization.
-FLUID: name of the fluid, according to coolprop nomenclature.
-FLUID_MODEL: ideal or real.
-FLUID_GAMMA: cp/cv ratio (needed if ideal gas mode is selected).
-CFL_MAX: approximate max CFL condition to respect at the first time-step.
-NUMERICAL_SCHEME: Roe, Godunov, WAF, MUSCL-Hancock.
-BOUNDARY_CONDITIONS: reflective, transparent or periodic.
-RHOL, RHOR: initial left and right values of density.
-UL, UR: initial left and right values of velocity.
-PL, PR: initial left and right values of pressure.
-HIGH_ORDER: True or False to enable MUSCL reconstruction with Van Albada Limiter.
-```
+* The input parameters are specified inside every `intput.ini` file, and should be quite easy to comprehend and modify. The content of input files
+can be taken from the testcases folder, or alternatively checking the Config.py class.
 
 
 
@@ -59,6 +46,8 @@ on windows based machines. It should be quite easy to fix. With time the code wi
 
 * The system of Euler equations is solved with the forward Euler explicit method (first-order in time). This means that the time-step must be accurately restricted below certain limits (case by case dependent), and a large number of iterations may be required to simulate a certain problem. The first thing to do when a simulation fails, is to try reducing the `CFL_MAX` input parameter. 
 
+* The TOPOLOGY_MODE = nozzle solves the quasi-1D Euler equations with source terms related to nozzle modeling. The nozzle description
+needs to be added as input in a csv file containing axial locations on the first column and area magnitude in the second.
 
 
 ### Results Example ###
@@ -98,10 +87,10 @@ Roe's generalized scheme for real gas, with and without Entropy fix.
 
 [1] Toro, Eleuterio F. Riemann solvers and numerical methods for fluid dynamics: a practical introduction. Springer Science & Business Media, 2013.
 
-[2] Arabi, Sina, Jean-Yves Trépanier, and Ricardo Camarero. "A simple extension of Roe's scheme for real gases." Journal of Computational Physics 329 (2017): 16-28.
+[2] Arabi, Sina, Jean-Yves Trï¿½panier, and Ricardo Camarero. "A simple extension of Roe's scheme for real gases." Journal of Computational Physics 329 (2017): 16-28.
 
 [3] Blazek, Jiri. Computational fluid dynamics: principles and applications. Butterworth-Heinemann, 2015.
 
-[4] D’Alessandro, Simone, Marco Pizzarelli, and Francesco Nasuti. "A hybrid real/ideal gas mixture computational framework to capture wave propagation in liquid rocket combustion chamber conditions." Aerospace 8.9 (2021): 250.
+[4] Dï¿½Alessandro, Simone, Marco Pizzarelli, and Francesco Nasuti. "A hybrid real/ideal gas mixture computational framework to capture wave propagation in liquid rocket combustion chamber conditions." Aerospace 8.9 (2021): 250.
 
 [5] Hirsch, Charles. Numerical computation of internal and external flows: The fundamentals of computational fluid dynamics. Elsevier, 2007.
