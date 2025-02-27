@@ -118,7 +118,7 @@ class Config:
     
     def getAreaReference(self):
         try:
-            return float(self.config_parser.get('GEOMETRY', 'AREA_REFERENCE')) 
+            return float(self.config_parser.get('GEOMETRY', 'REFERENCE_AREA')) 
         except:
             return 1.0 # default
     

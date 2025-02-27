@@ -32,8 +32,6 @@ class ShockTube:
         if self.fluid_model.lower()=='ideal':
             self.gmma = self.config.getFluidGamma()
             self.Rgas = self.config.getGasRConstant()
-            print("Fluid cp/cv ratio [-]:                       %.2e" %self.gmma)
-            print("Fluid gas constant [J/kgK]:                  %.2e" %self.Rgas)
             self.fluid = FluidIdeal(self.gmma,self.Rgas)
         elif self.fluid_model.lower()=='real':
             self.fluid = FluidReal(self.fluid_name)
@@ -69,7 +67,6 @@ class ShockTube:
         self.nTime = len(self.timeVec)
         
         self.BCtype = self.config.getBoundaryConditions()    
-        self.GenerateVirtualGeometry()
         
         print("\n" + "=" * 80)
         print(" " * 25 + "🚀  WELCOME TO PYSHOCKTUBE 🚀")
@@ -83,6 +80,11 @@ class ShockTube:
         print("Final time instant [s]:                      %.2e" % self.timeMax)
         print("Fluid name:                                  %s" % self.fluid_name)
         print("Fluid treatment:                             %s" % self.fluid_model)
+        if self.fluid_model.lower()=='ideal':
+            print("Fluid cp/cv ratio [-]:                       %.2e" %self.gmma)
+            print("Fluid gas constant [J/kgK]:                  %.2e" %self.Rgas)
+        
+        self.GenerateVirtualGeometry()
 
 
     def GenerateVirtualGeometry(self):
@@ -106,7 +108,7 @@ class ShockTube:
         
         if self.topology.lower()=='default':
             print("The simulation proceeds with default topology: constant area")
-            self.areaTube = np.zeros_like(self.xNodesVirt)+1
+            self.areaTube = np.zeros_like(self.xNodesVirt)+self.areaReference
         elif self.topology.lower()=='nozzle':
             print(f"The simulation topology is: nozzle. Reading the coordinates from the nozzle file {self.config.getNozzleFilePath()}")
             self.areaTube = self.readNozzleFile(self.xNodesVirt, self.config.getNozzleFilePath())
@@ -792,12 +794,12 @@ class ShockTube:
         
         # Linear interpolation with external filling set to 1
         areaReference = self.config.getAreaReference()
-        interpolatedNozzleArea = np.interp(xTube, nozzleX, nozzleArea, left=1, right=1)/areaReference
+        interpolatedNozzleArea = np.interp(xTube, nozzleX, nozzleArea, left=areaReference, right=areaReference)/areaReference
     
-        print(f"The specified reference Area of the tube is {areaReference}.3f m2.")
-        print(f"After normalization the nozzle minimum area is {interpolatedNozzleArea.min()*100}.2f percent of the tube area.")
-        print(f"After normalization the nozzle maximum area is {interpolatedNozzleArea.max()*100}.2f percent of the tube area.")
-        print(f"If this is not correct modify the area of the nozzle file, or the setting REFERENCE_AREA in the geometry section.")
+        print(f"The reference Area of the tube is {areaReference:.6f} m2.")
+        print(f"After normalization the nozzle minimum area is {interpolatedNozzleArea.min()*100:.2f} percent of the tube area.")
+        print(f"After normalization the nozzle maximum area is {interpolatedNozzleArea.max()*100:.2f} percent of the tube area.")
+        print(f"If this is not correct, modify the REFERENCE_AREA setting in the geometry section of the input file to the correct value ( = nozzle inlet area).")
         
         return interpolatedNozzleArea
         
