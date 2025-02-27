@@ -9,9 +9,9 @@ import os
 
 ##########################################  INPUT ######################################################
 
-pickleFile = 'Results/ASTER_AIR_75_NOZZLE_REAL_NX_200_TMAX_0.060000.pik'
+pickleFile = 'Results/ASTER_AIR_75_NOZZLE_REAL_NX_200_TMAX_0.050000.pik'
 outputFolder = 'Pictures'
-suffixPictures = '75IdealGas' # suffix appended to pictures to distinguish different simulations
+suffixPictures = 'new' # suffix appended to pictures to distinguish different simulations
 
 ########################################################################################################
 
