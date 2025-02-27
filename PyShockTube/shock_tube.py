@@ -695,21 +695,24 @@ class ShockTube:
 
     def SaveNodeSolutionToCSV(self, iNode, timeInstants, folder_name, file_name):
         """
-        Save the 'Pressure' and 'Temperature' array from the solution to a CSV file.
+        Save the array of fluid flow quantities (P,T,s,Mach,Gamma) from the solution to a CSV file.
         """
         file_path = folder_name + '/' + file_name + '.dat'
+
         pressure_data = self.solution['Pressure'][iNode, :]  # Extract the pressure data (1D array)
         density_data = self.solution['Density'][iNode, :]  # Extract the density data (1D array)
         temperature_data = self.fluid.ComputeTemperature_p_rho(pressure_data, density_data)
+        entropy_data = self.fluid.ComputeEntropy_p_rho(pressure_data,density_data)
+        fundDerGasDynamics_data = self.fluid.ComputeFunDerGamma_p_rho(pressure_data,density_data)
+        compressibilityFactor_data = self.fluid.ComputeComprFactorZ_p_rho(pressure_data,density_data)
 
         with open(file_path, 'w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
             for value in range(len(timeInstants)):
-                writer.writerow([timeInstants[value], pressure_data[value], temperature_data[value]])
-            # writer.writerow(pressure_data)  # Write each row of the array to the CSV file
-            # writer.writerow(timeInstants)  # Write each row of the array to the CSV file
+                writer.writerow([timeInstants[value], pressure_data[value], temperature_data[value], density_data[value],
+                                 entropy_data[value], fundDerGasDynamics_data[value], compressibilityFactor_data[value]])
 
-        print(f"Pressure and temperature data saved to {file_path}!")
+        print(f"Fluid flow quantities (P,T,D,s,Gamma,Z) saved to {file_path}!")
 
     def MUSCL_Reconstruction(self, il, ir, it, limiter):
         """
