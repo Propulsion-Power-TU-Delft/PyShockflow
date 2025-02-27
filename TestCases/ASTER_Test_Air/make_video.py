@@ -34,10 +34,6 @@ mach = velocity/np.sqrt(1.4*pressure/density) # substitute this with real model 
 nPoints, nTimes = density.shape
 iterations = np.linspace(0, nTimes-1, num=maxFrames, dtype=int)
 
-# fields = [rho, u, p, E, mach]
-# labels = ['Density [kg/m3]', 'Velocity [m/s]', 'Pressure [Pa]', 'Static Energy [J/kg]' , 'Mach [-]']
-# videoNames = ['Density.mp4', 'Velocity.mp4', 'Pressure.mp4', 'Energy.mp4', 'Mach.mp4']
-
 fields = [mach, pressure]
 labels = ['Mach [-]', 'Pressure [bar]']
 videoNames = ['Mach.mp4', 'Pressure.mp4']
