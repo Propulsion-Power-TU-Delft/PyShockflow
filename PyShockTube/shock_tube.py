@@ -102,12 +102,14 @@ class ShockTube:
         self.xNodesVirt[1:-1] = self.xNodes
         self.xNodesVirt[0] = self.xNodes[0]-self.dx
         self.xNodesVirt[-1] = self.xNodes[-1]+self.dx
+        self.areaReference = self.config.getAreaReference()
         
         if self.topology.lower()=='default':
+            print("The simulation proceeds with default topology: constant area")
             self.areaTube = np.zeros_like(self.xNodesVirt)+1
         elif self.topology.lower()=='nozzle':
+            print(f"The simulation topology is: nozzle. Reading the coordinates from the nozzle file {self.config.getNozzleFilePath()}")
             self.areaTube = self.readNozzleFile(self.xNodesVirt, self.config.getNozzleFilePath())
-            print('The simulation topology selected is nozzle. Reading the coordinates')
         else:
             raise ValueError('Unknown topology type')
         
@@ -789,7 +791,14 @@ class ShockTube:
         nozzleArea = nozzleData[:,1]
         
         # Linear interpolation with external filling set to 1
-        interpolatedNozzleArea = np.interp(xTube, nozzleX, nozzleArea, left=1, right=1)
+        areaReference = self.config.getAreaReference()
+        interpolatedNozzleArea = np.interp(xTube, nozzleX, nozzleArea, left=1, right=1)/areaReference
+    
+        print(f"The specified reference Area of the tube is {areaReference}.3f m2.")
+        print(f"After normalization the nozzle minimum area is {interpolatedNozzleArea.min()*100}.2f percent of the tube area.")
+        print(f"After normalization the nozzle maximum area is {interpolatedNozzleArea.max()*100}.2f percent of the tube area.")
+        print(f"If this is not correct modify the area of the nozzle file, or the setting REFERENCE_AREA in the geometry section.")
+        
         return interpolatedNozzleArea
         
 

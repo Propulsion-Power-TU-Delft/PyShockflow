@@ -116,3 +116,10 @@ class Config:
         return str(self.config_parser.get('GEOMETRY', 'NOZZLE_FILEPATH'))
     
     
+    def getAreaReference(self):
+        try:
+            return float(self.config_parser.get('GEOMETRY', 'AREA_REFERENCE')) 
+        except:
+            return 1.0 # default
+    
+    
