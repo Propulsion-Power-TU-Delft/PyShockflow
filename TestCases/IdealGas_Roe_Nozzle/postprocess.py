@@ -4,6 +4,7 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
+from PyShockTube.styles import *
 
 with open('Results/Ideal_Gas_ROE_fine_0.003000.pik', 'rb') as file:
     tube = pickle.load(file)
@@ -21,7 +22,7 @@ velocity = tube.solution['Velocity'][1:-1,:]
 mach = velocity/np.sqrt(gmma*pressure/density)
 
 
-# CHECK THE MACH NUMBER
+# PLOT THE MACH NUMBER
 machThroat = mach[np.argmin(tube.areaTube), :]
 areaRatioExit = tube.areaTube[-1]/np.min(tube.areaTube)
 def compute_alpha_residual(M):
@@ -30,9 +31,9 @@ def compute_alpha_residual(M):
 machExitTheoretical = fsolve(compute_alpha_residual, 1.5)
 plt.figure()
 plt.plot(time*1e3, machThroat, 'C0',label='Throat Section')
-plt.plot(time*1e3, np.zeros_like(time)+1, '--C0', label=r'Theoretical Steady Value: $M=1$')
+plt.plot(time*1e3, np.zeros_like(time)+1, '--C0', label=r'Reference: $M=1$')
 plt.plot(time*1e3, mach[-1,:], 'C1', label='Exit Section')
-plt.plot(time*1e3, np.zeros_like(time) + machExitTheoretical, '--C1', label=r'Theoretical Steady Value: $\alpha(M) = \frac{A}{A^*}$')
+plt.plot(time*1e3, np.zeros_like(time) + machExitTheoretical, '--C1', label=r'Reference: $\alpha(M) = \frac{A}{A^*}$')
 plt.xlabel(r'$t \ \rm{[ms]}$')
 plt.ylabel(r'$M \ \rm{[-]}$')
 plt.legend()
@@ -48,9 +49,9 @@ massfluxTheoretical = totPressure*np.min(tube.areaTube)/(np.sqrt(gmma*Rgas*totTe
 
 plt.figure()
 plt.plot(time*1e3, massflux, label='Simulation')
-plt.plot(time*1e3, np.zeros_like(time) + massfluxTheoretical[-1,-1], '--r', label=r'Theoretical Steady Value: $\dot{m}=\frac{P_t A^*}{\sqrt{\gamma R T_t}} \cdot f(\gamma)$')
+plt.plot(time*1e3, np.zeros_like(time) + massfluxTheoretical[-1,-1], '--r', label=r'Reference: $\dot{m}=\frac{P_t A^*}{\sqrt{\gamma R T_t}} \cdot f(\gamma)$')
 plt.xlabel(r'$t \ \rm{[ms]}$')
-plt.ylabel(r'$\dot{m}_{EXIT} \ \rm{[kg/s]}$')
+plt.ylabel(r'$\frac{\dot{m}_{EXIT}}{A_{TUBE}} \ \rm{[kg/s/m^2]}$')
 plt.legend()
 plt.grid(alpha=.3)
 plt.savefig('massflow.pdf', bbox_inches='tight')

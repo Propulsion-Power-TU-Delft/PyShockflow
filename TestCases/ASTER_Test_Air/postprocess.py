@@ -4,75 +4,81 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
+from PyShockTube.styles import *
+import os
 
-with open('Results/ASTER_AIR_NX_250_TMAX_0.005000.pik', 'rb') as file:
+##########################################  INPUT ######################################################
+
+pickleFile = 'Results/ASTER_AIR_75_NOZZLE_REAL_NX_200_TMAX_0.060000.pik'
+outputFolder = 'Pictures'
+suffixPictures = '75IdealGas' # suffix appended to pictures to distinguish different simulations
+
+########################################################################################################
+
+
+os.makedirs('Pictures', exist_ok=True)
+with open(pickleFile, 'rb') as file:
     tube = pickle.load(file)
-    
-gmma = 1.4
-At = 0.7
-Rgas = 287.14
 
+
+# ALIAS TO SOLUTION FIELDS (tube is the ShockTube object with the full space-time solution stored in it)
 axialCoord = tube.xNodes
 time = tube.timeVec
-pressure = tube.solution['Pressure'][1:-1,:]
-density = tube.solution['Density'][1:-1,:]
-temperature = pressure/density/Rgas
-velocity = tube.solution['Velocity'][1:-1,:]
-mach = velocity/np.sqrt(gmma*pressure/density)
+pressure = tube.solution['Pressure'][1:-1,:]    # avoid Halo nodes
+density = tube.solution['Density'][1:-1,:]      # avoid Halo nodes
+velocity = tube.solution['Velocity'][1:-1,:]    # avoid Halo nodes
 
-ni,nt = mach.shape
-id1 = int(0.8/2*ni) # 1.2m from throat located at 2 m
-id2 = int(0.6/2*ni) # 1.6m from throat located at 2 m
-id3 = int(0.4/2*ni) # 1.8m from throat located at 2 m
-id4 = int(0.2/2*ni) # 1.8m from throat located at 2 m
+
+
+# PLOT OF KULITE PRESSURE EVOLUTIONS IN TIME
+ni,nt = velocity.shape
+totalLength = 3.05              # total tube length (3m to nozzle throat, and other 5cm to exit in the tank)
+id1 = int(1.8/totalLength*ni)   # 1.2m from throat located at 3m -> 1.8m from the left end
+id2 = int(1.6/totalLength*ni)   # 1.4m from throat located at 3m -> 1.8m from the left end
+id3 = int(1.4/totalLength*ni)   # 1.6m from throat located at 3m -> 1.8m from the left end
+id4 = int(1.2/totalLength*ni)   # 1.8m from throat located at 3m -> 1.8m from the left end
 
 plt.figure()
-plt.plot(time, pressure[id1,:]/1e5, label='kulite 1')
-plt.plot(time, pressure[id2,:]/1e5, label='kulite 2')
-plt.plot(time, pressure[id3,:]/1e5, label='kulite 3')
-plt.plot(time, pressure[id4,:]/1e5, label='kulite 3')
-plt.xlabel(r'$t \ \rm{[s]}$')
+plt.plot(time*1e3, pressure[id1,:]/1e5, label='PT 1')
+plt.plot(time*1e3, pressure[id2,:]/1e5, label='PT 2')
+plt.plot(time*1e3, pressure[id3,:]/1e5, label='PT 3')
+plt.plot(time*1e3, pressure[id4,:]/1e5, label='PT 3')
+plt.xlabel(r'$t \ \rm{[ms]}$')
 plt.ylabel(r'$p \ \rm{[bar]}$')
 plt.grid(alpha=.3)
 plt.legend()
+plt.savefig(outputFolder+'/kulite_pressures_%s.pdf' %(suffixPictures), bbox_inches='tight')
 
 
+# PLOT OF EXIT AND THROAT MACH NUMBERS IN TIME
+machExit = np.zeros(nt)
+machThroat = np.zeros(nt)
+indexThroat = np.argmin(tube.areaTube)
 
-
-
-
-# CHECK THE MACH NUMBER
-machThroat = mach[np.argmin(tube.areaTube), :]
-areaRatioExit = tube.areaTube[-1]/np.min(tube.areaTube)
-def compute_alpha_residual(M):
-    return areaRatioExit-1/M*(2/(gmma+1)*(1+(gmma-1)/2*M**2))**((gmma+1)/(2*gmma-2))
-
-machExitTheoretical = fsolve(compute_alpha_residual, 1.5)
-plt.figure()
-plt.plot(time*1e3, machThroat, 'C0',label='Throat Section')
-plt.plot(time*1e3, np.zeros_like(time)+1, '--C0', label=r'Theoretical Steady Value: $M=1$')
-plt.plot(time*1e3, mach[-1,:], 'C1', label='Exit Section')
-plt.plot(time*1e3, np.zeros_like(time) + machExitTheoretical, '--C1', label=r'Theoretical Steady Value: $\alpha(M) = \frac{A}{A^*}$')
-plt.xlabel(r'$t \ \rm{[ms]}$')
-plt.ylabel(r'$M \ \rm{[-]}$')
-plt.legend()
-plt.grid(alpha=.3)
-plt.savefig('mach.pdf', bbox_inches='tight')
-
-
-# CHECK THE MASS FLOW RATE
-massflux = density[-1,:]*velocity[-1,:] # numerical value
-totPressure = pressure*(1+(gmma-1)/2*mach**2)**((gmma)/(gmma-1))
-totTemperature = temperature*(1+(gmma-1)/2*mach**2)
-massfluxTheoretical = totPressure*np.min(tube.areaTube)/(np.sqrt(gmma*Rgas*totTemperature))*gmma*(2/(gmma+1))**((gmma+1)/(2*gmma-2))
+for iTime in range(nt):
+    machExit[iTime] = velocity[-1,iTime] / tube.fluid.ComputeSoundSpeed_p_rho(pressure[-1,iTime], density[-1, iTime])
+    machThroat[iTime] = velocity[indexThroat,iTime] / tube.fluid.ComputeSoundSpeed_p_rho(pressure[indexThroat,iTime], density[indexThroat, iTime])
 
 plt.figure()
-plt.plot(time*1e3, massflux, label='Simulation')
-plt.plot(time*1e3, np.zeros_like(time) + massfluxTheoretical[-1,-1], '--r', label=r'Theoretical Steady Value: $\dot{m}=\frac{P_t A^*}{\sqrt{\gamma R T_t}} \cdot f(\gamma)$')
+plt.plot(time*1e3, machExit, label='Exit')
+# plt.plot(time*1e3, machThroat, label='Throat')
+plt.grid(alpha=grid_opacity)
 plt.xlabel(r'$t \ \rm{[ms]}$')
-plt.ylabel(r'$\dot{m}_{EXIT} \ \rm{[kg/s]}$')
+plt.ylabel(r'$M$ [-]')
+plt.legend()
+plt.savefig(outputFolder+'/Mach_time_%s.pdf' %(suffixPictures), bbox_inches='tight')
+
+
+
+# PLOT OF EXIT MASS FLUX IN TIME
+massfluxExit = density[-1,:]*velocity[-1,:]
+plt.figure()
+plt.plot(time*1e3, massfluxExit, label='Exit')
+plt.xlabel(r'$t \ \rm{[ms]}$')
+plt.ylabel(r'$\frac{\dot{m}_{EXIT}}{A_{TUBE}} \ \rm{[kg/s/m^2]}$')
 plt.legend()
 plt.grid(alpha=.3)
-plt.savefig('massflow.pdf', bbox_inches='tight')
-
+plt.savefig(outputFolder+'/massflow_%s.pdf' %(suffixPictures), bbox_inches='tight')
 plt.show()
+
+
