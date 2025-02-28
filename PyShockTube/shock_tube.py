@@ -410,6 +410,15 @@ class ShockTube:
     
     
     def ComputeSourceTerms(self, it):
+        """Compute source terms related to area variations along the tube due to a nozzle. Source terms taken from 'On the numerical simulation
+        of non-classical quasi-1D steady nozzle flows: Capturing sonic shocks' by Vimercati and Guardone.
+
+        Args:
+            it (int): time step index
+
+        Returns:
+            np.ndarray: source terms arrays (nPoints, 3)
+        """
         totalEnergy = self.solution['Energy'][:, it] + 0.5*self.solution['Velocity'][:,it]**2
         source_terms = np.zeros((self.nNodesHalo,3))
         source_terms[:,0] = - self.solution['Density'][:, it] * self.solution['Velocity'][:, it]*self.dAreaTude_dx/self.areaTube
@@ -792,14 +801,16 @@ class ShockTube:
         nozzleX = nozzleData[:,0]
         nozzleArea = nozzleData[:,1]
         
-        # Linear interpolation with external filling set to 1
+        # Linear interpolation with external filling set to area Reference (=Tube area)
         areaReference = self.config.getAreaReference()
-        interpolatedNozzleArea = np.interp(xTube, nozzleX, nozzleArea, left=areaReference, right=areaReference)/areaReference
+        interpolatedNozzleArea = np.interp(xTube, nozzleX, nozzleArea, left=areaReference, right=areaReference)
     
-        print(f"The reference Area of the tube is {areaReference:.6f} m2.")
-        print(f"After normalization the nozzle minimum area is {interpolatedNozzleArea.min()*100:.2f} percent of the tube area.")
-        print(f"After normalization the nozzle maximum area is {interpolatedNozzleArea.max()*100:.2f} percent of the tube area.")
-        print(f"If this is not correct, modify the REFERENCE_AREA setting in the geometry section of the input file to the correct value ( = nozzle inlet area).")
+        print(f"The reference tube area is: {areaReference:.6f} [m2].")
+        print(f"The nozzle throat area is {interpolatedNozzleArea.min():.6f} [m2].")
+        print(f"The nozzle maximum area is {interpolatedNozzleArea.max():.6f} [m2].")
+        print(f"The area ratio between nozzle throat and exit section is {interpolatedNozzleArea.min()/interpolatedNozzleArea[-1]:.6f}.")
+        print(f"The area ratio between nozzle throat and tube is {interpolatedNozzleArea.min()/areaReference:.6f}.")
+        print(f"If this is not correct, modify the REFERENCE_AREA setting in the geometry section of the input file to the correct value for the tube area, or modify the nozzle csv file to be consistent with the tube area.")
         
         return interpolatedNozzleArea
         
