@@ -29,7 +29,12 @@ rho = solution.solution['Density']
 u = solution.solution['Velocity']
 p = solution.solution['Pressure']
 E = solution.solution['Energy']
-mach = u/np.sqrt(1.4*p/rho)
+mach = solution.fluid.ComputeMach_u_p_rho(solution.solution['Velocity'], solution.solution['Pressure'], solution.solution['Density'])
+entropy = solution.fluid.ComputeEntropy_p_rho(solution.solution['Pressure'], solution.solution['Density'])
+totalPressure = solution.fluid.ComputeTotalPressure_p_M(solution.solution['Pressure'], mach)
+temperature = solution.fluid.ComputeTemperature_p_rho(solution.solution['Pressure'], solution.solution['Density'])
+totalTemperature = solution.fluid.ComputeTotalTemperature_T_M(temperature, mach)
+
 nPoints, nTimes = rho.shape
 iterations = np.linspace(0, nTimes-1, num=maxLength, dtype=int)
 
@@ -37,9 +42,9 @@ iterations = np.linspace(0, nTimes-1, num=maxLength, dtype=int)
 # labels = ['Density [kg/m3]', 'Velocity [m/s]', 'Pressure [Pa]', 'Static Energy [J/kg]' , 'Mach [-]']
 # videoNames = ['Density.mp4', 'Velocity.mp4', 'Pressure.mp4', 'Energy.mp4', 'Mach.mp4']
 
-fields = [mach]
-labels = ['Mach [-]']
-videoNames = ['Mach.mp4']
+fields = [entropy]
+labels = ['Entropy [J/kgK]', 'Total Pressure [Pa]', 'Total Temperature [K]']
+videoNames = ['Entropy.mp4', 'TotalPressure.mp4', 'TotalTemperature.mp4']
 
 # PLOTS AND VIDEO
 def plot_limits(f, extension=0.05):
