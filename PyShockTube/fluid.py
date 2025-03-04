@@ -19,6 +19,10 @@ class FluidIdeal():
     
     def ComputeSoundSpeed_p_rho(self, p, rho):
         return np.sqrt(self.gmma*p/rho)
+    
+    def ComputeMach_u_p_rho(self, u, p, rho):
+        soundSpeed = self.ComputeSoundSpeed_p_rho(p, rho)
+        return np.abs(u)/soundSpeed
 
     def ComputeTemperature_p_rho(self, p, rho):
         return (p/rho)/self.Rgas
@@ -34,6 +38,12 @@ class FluidIdeal():
 
     def ComputeComprFactorZ_p_rho(self, p, rho):
         return 1
+    
+    def ComputeTotalPressure_p_M(self, p, M):
+        return p*(1+(self.gmma-1)/2*M**2)**(self.gmma/(self.gmma-1))
+    
+    def ComputeTotalTemperature_T_M(self, T, M):
+        return T*(1+(self.gmma-1)/2*M**2)
 
 class FluidReal():
     """
@@ -70,6 +80,10 @@ class FluidReal():
             # Calculate weighted speed of sound based on quality
             a = (1 - Q) * a_liquid + Q * a_vapor
             return a
+    
+    def ComputeMach_u_p_rho(self, u, p, rho):
+        soundSpeed = self.ComputeSoundSpeed_p_rho(p, rho)
+        return np.abs(u)/soundSpeed
     
     def ComputeTemperature_p_rho(self, p, rho):
         T = CP.PropsSI('T', 'P', p, 'D', rho, self.fluid_name)
