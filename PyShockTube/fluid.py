@@ -31,13 +31,19 @@ class FluidIdeal():
         return p/self.Rgas/T
 
     def ComputeEntropy_p_rho(self, p, rho):
-        return p/rho**self.gmma
+        return p/(rho**self.gmma)
 
     def ComputeFunDerGamma_p_rho(self, p, rho):
-        return 0.5*(self.gmma+1)
+        if isinstance(p, np.ndarray): # handle the case when the inputs are arrays
+            return 0.5*(self.gmma+1)+np.zeros_like(p)
+        else:
+            return 0.5*(self.gmma+1)
 
     def ComputeComprFactorZ_p_rho(self, p, rho):
-        return 1
+        if isinstance(p, np.ndarray):
+            return 1+np.zeros_like(p)
+        else:
+            return 1
     
     def ComputeTotalPressure_p_M(self, p, M):
         return p*(1+(self.gmma-1)/2*M**2)**(self.gmma/(self.gmma-1))
@@ -96,11 +102,27 @@ class FluidReal():
     def ComputeEntropy_p_rho(self, p, rho):
         s = CP.PropsSI('S', 'P', p, 'D', rho, self.fluid_name)
         return s
-
+    
     def ComputeFunDerGamma_p_rho(self, p, rho):
-        G = CP.PropsSI('FUNDAMENTAL_DERIVATIVE_OF_GAS_DYNAMICS', 'P', p, 'D', rho, self.fluid_name)
-        return G
+        try: # if single phase this will work
+            G = CP.PropsSI("FUNDAMENTAL_DERIVATIVE_OF_GAS_DYNAMICS", "P", p, "D", rho, self.fluid_name)
+            return G
+        except: # if close to two phase, we need to do like the speed of sound
+            T = self.ComputeTemperature_p_rho(p, rho)
+            try:
+                Q = CP.PropsSI("Q", "T", T, "P", p, self.fluid_name)
+            except:
+                # if the state is very close to saturation line it fails to find the quality -> set artifically to 1
+                Q = 1
 
+            # G in liquid and vapor phases at the given T
+            G_liquid = CP.PropsSI("FUNDAMENTAL_DERIVATIVE_OF_GAS_DYNAMICS", "T", T, "Q", 0, self.fluid_name)  # sound speed for liquid phase
+            G_vapor = CP.PropsSI("FUNDAMENTAL_DERIVATIVE_OF_GAS_DYNAMICS", "T", T, "Q", 1, self.fluid_name)   # sound speed for vapor phase
+
+            # Calculate weighted G based on quality
+            G = (1 - Q) * G_liquid + Q * G_vapor
+            return G
+        
     def ComputeComprFactorZ_p_rho(self, p, rho):
         Z = CP.PropsSI('Z', 'P', p, 'D', rho, self.fluid_name)
         return Z
