@@ -102,16 +102,33 @@ class ShockTube:
             pointsUpstream = int(pointsOutside*(lengthUpstream)/(lengthUpstream+lengthDownstream))
             pointsDownstream = pointsOutside-pointsUpstream
             
-            xUpstream = np.linspace(0, refinementCoords[0], pointsUpstream+1)
-            xRefinement = np.linspace(refinementCoords[0], refinementCoords[1], pointsRefinement+1)
-            xDownstream = np.linspace(refinementCoords[1], length, pointsDownstream)
+            # case in which the refinement is internal
+            if pointsDownstream>0 and pointsUpstream>0:
+                xUpstream = np.linspace(0, refinementCoords[0], pointsUpstream+1)
+                xRefinement = np.linspace(refinementCoords[0], refinementCoords[1], pointsRefinement+1)
+                xDownstream = np.linspace(refinementCoords[1], length, pointsDownstream)
+                if self.config.adaptMeshRefinementExtremities():
+                    xUpstream = self.ComputeStretchedGridPoints(xUpstream, xRefinement, 'upstream')
+                    xDownstream = self.ComputeStretchedGridPoints(xDownstream, xRefinement, 'downstream')
+                xNodes = np.concatenate((xUpstream[0:-1], xRefinement[0:-1], xDownstream))
+                
+            elif pointsUpstream>0 and pointsDownstream==0: # the refinement finish with the end of the domain
+                xUpstream = np.linspace(0, refinementCoords[0], pointsUpstream+1)
+                xRefinement = np.linspace(refinementCoords[0], refinementCoords[1], pointsRefinement+1)
+                if self.config.adaptMeshRefinementExtremities():
+                    xUpstream = self.ComputeStretchedGridPoints(xUpstream, xRefinement, 'upstream')  
+                xNodes = np.concatenate((xUpstream[0:-1], xRefinement))
             
-            # adaptation at refinement extremities
-            if self.config.adaptMeshRefinementExtremities():
-                xUpstream = self.ComputeStretchedGridPoints(xUpstream, xRefinement, 'upstream')
-                xDownstream = self.ComputeStretchedGridPoints(xDownstream, xRefinement, 'downstream')
+            elif pointsUpstream==0 and pointsDownstream>0: # the refinement starts with the domain
+                xRefinement = np.linspace(refinementCoords[0], refinementCoords[1], pointsRefinement+1)
+                xDownstream = np.linspace(refinementCoords[1], length, pointsDownstream)
+                if self.config.adaptMeshRefinementExtremities():
+                    xDownstream = self.ComputeStretchedGridPoints(xDownstream, xRefinement, 'downstream')
+                xNodes = np.concatenate((xRefinement[0:-1], xDownstream))
             
-            xNodes = np.concatenate((xUpstream[0:-1], xRefinement[0:-1], xDownstream))
+            else:
+                raise ValueError('The refinement is ill-positioned. Please locate it internally to the domain, or at one of the extremities')
+                
         return xNodes  
     
     
