@@ -1,0 +1,2 @@
+Solve the 1D-Euler equations by means of the Roe first order scheme. Validate the mesh refinement made between two axial locations
+X_START_REFINEMENT and X_END_REFINEMENT. The results should be the same of the case with equidistant grid points.
