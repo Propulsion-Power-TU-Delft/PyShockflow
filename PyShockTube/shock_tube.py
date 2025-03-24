@@ -36,12 +36,6 @@ class ShockTube:
         elif self.fluid_model.lower()=='real':
             self.fluid = FluidReal(self.fluid_name)
         
-        # geometry
-        self.nNodes = self.config.getNumberOfPoints()
-        self.length = self.config.getLength()
-        self.xNodes = np.linspace(0, self.length, self.nNodes)
-        self.dx = self.xNodes[1]-self.xNodes[0]
-        
         # fluid initial states
         self.pressureLeft = self.config.getPressureLeft()
         self.pressureRight = self.config.getPressureRight()
@@ -56,18 +50,24 @@ class ShockTube:
         self.velocityLeft = self.config.getVelocityLeft()
         self.velocityRight = self.config.getVelocityRight()
         
+        # geometry
+        self.length = self.config.getLength()
+        self.nNodes = self.config.getNumberOfPoints()
+        xNodes = self.GeneratePhysicalGeometry(self.length, self.nNodes)
+        self.GenerateVirtualGeometry(xNodes)
+        self.PlotGridGeometry()
+        
         # compute dt
-        Smax = np.sqrt(1.4*np.max([self.pressureLeft, self.pressureRight])/np.min([self.densityLeft, self.densityRight]))+np.max([self.velocityLeft, self.velocityRight])  # brutal approximation max eigenvalue
-        CFLmax = self.config.getCFLMax() 
-        dtMax = CFLmax * self.dx / Smax
         self.timeMax = self.config.getTimeMax()
-        nt = int(self.timeMax/dtMax)        
-        self.timeVec = np.linspace(0, self.timeMax, nt)
+        self.timeVec = self.ComputeTimeArray()
         self.dt = self.timeVec[1]-self.timeVec[0]
         self.nTime = len(self.timeVec)
         
+        # Boundary Conditions
         self.BCtype = self.config.getBoundaryConditions()    
         
+
+        # Print info
         print("\n" + "=" * 80)
         print(" " * 25 + "🚀  WELCOME TO PYSHOCKTUBE 🚀")
         print(" " * 18 + "Fluid Dynamics Simulation for Shock Tubes")
@@ -84,10 +84,42 @@ class ShockTube:
             print("Fluid cp/cv ratio [-]:                       %.2e" %self.gmma)
             print("Fluid gas constant [J/kgK]:                  %.2e" %self.Rgas)
         
-        self.GenerateVirtualGeometry()
 
-
-    def GenerateVirtualGeometry(self):
+    def GeneratePhysicalGeometry(self, length, nodes):
+        meshRefined = self.config.isMeshRefined()
+        if meshRefined is False:
+            xNodes = np.linspace(0, length, nodes)
+        else:
+            refinementCoords = self.config.getRefinementBoundaries()
+            print("Mesh is refined between the two boundaries [m]: ", refinementCoords)
+            
+            pointsRefinement = self.config.getNumberPointsRefinement()
+            totalPoints = nodes
+            pointsOutside = totalPoints-pointsRefinement
+            lengthUpstream = refinementCoords[0]
+            lengthDownstream = length-refinementCoords[1]
+            pointsUpstream = int(pointsOutside*(lengthUpstream)/(lengthUpstream+lengthDownstream))
+            pointsDownstream = pointsOutside-pointsUpstream
+            
+            xUpstream = np.linspace(0, refinementCoords[0], pointsUpstream+1)
+            xRefinement = np.linspace(refinementCoords[0], refinementCoords[1], pointsRefinement+1)
+            xDownstream = np.linspace(refinementCoords[1], length, pointsDownstream)
+            
+            xNodes = np.concatenate((xUpstream[0:-1], xRefinement[0:-1], xDownstream))
+            
+        return xNodes  
+    
+    
+    def ComputeGridSpacing(self, xNodes):
+        dx = np.zeros_like(xNodes)
+        dx[0] = xNodes[1]-xNodes[0]
+        for i in range(1,len(dx)-1):
+            dx[i] = (xNodes[i+1]-xNodes[i])/2 + (xNodes[i]-xNodes[i-1])/2
+        dx[-1] = xNodes[-1]-xNodes[-2]
+        return dx
+    
+    
+    def GenerateVirtualGeometry(self, xNodes):
         """
         Generate the virtual geometry consisting of halo nodes for boundary conditions
 
@@ -99,12 +131,14 @@ class ShockTube:
         -------
         None
         """
+        self.xNodes = xNodes
         self.nNodesHalo = self.nNodes+2
         self.xNodesVirt = np.zeros(self.nNodesHalo)
         self.xNodesVirt[1:-1] = self.xNodes
-        self.xNodesVirt[0] = self.xNodes[0]-self.dx
-        self.xNodesVirt[-1] = self.xNodes[-1]+self.dx
+        self.xNodesVirt[0] = self.xNodes[0] - (xNodes[1]-xNodes[0])
+        self.xNodesVirt[-1] = self.xNodes[-1] + (xNodes[-1]-xNodes[-2])
         self.areaReference = self.config.getAreaReference()
+        self.dx = self.ComputeGridSpacing(self.xNodesVirt)
         
         if self.topology.lower()=='default':
             print("The simulation proceeds with default topology: constant area")
@@ -116,7 +150,17 @@ class ShockTube:
             raise ValueError('Unknown topology type')
         
         self.dAreaTude_dx = np.gradient(self.areaTube, self.xNodesVirt)
-        
+    
+    
+    def ComputeTimeArray(self):
+        # compute dt
+        maxWaveSpeed = np.sqrt(1.4*np.max([self.pressureLeft, self.pressureRight])/np.min([self.densityLeft, self.densityRight]))+np.max([self.velocityLeft, self.velocityRight])  # brutal approximation max eigenvalue
+        maxCFL = self.config.getCFLMax() 
+        timestepMax = maxCFL * np.min(self.dx) / maxWaveSpeed
+        maxTime = self.config.getTimeMax()
+        nt = int(maxTime/timestepMax)        
+        timeVector = np.linspace(0, self.timeMax, nt)
+        return timeVector
         
     def InstantiateSolutionArrays(self):
         """
@@ -160,7 +204,31 @@ class ShockTube:
         dictIn['Energy'] = dictIn['Pressure'] / (self.gmma - 1) / dictIn['Density']
         for name in self.solutionNames:
             self.solution[name][:, 1:-1] = dictIn[name]
-
+    
+    
+    def PlotGridGeometry(self, trueAspectRatio=True, pointsToJump=1, save_filename=None):
+        """Plot the grid geometry. 1D tube, with thickness equal to the diameter of the tube
+        """
+        diameter = np.sqrt(4*self.areaTube/np.pi)
+        yLower = np.zeros_like(self.xNodesVirt)-diameter/2
+        yUpper = diameter/2
+        
+        plt.figure()
+        plt.plot(self.xNodesVirt, yLower, 'k')
+        plt.plot(self.xNodesVirt, yUpper, 'k')
+        nPointsPic = 10
+        for i in range(0, len(diameter), pointsToJump):
+            plt.plot(np.zeros(nPointsPic)+self.xNodesVirt[i], np.linspace(yLower[i], yUpper[i], nPointsPic), '-k', lw=0.5)
+        plt.xlabel(r'$x \ \rm{[-]}$')
+        plt.ylabel(r'$r \ \rm{[-]}$')
+        
+        if trueAspectRatio:
+            ax = plt.gca()
+            ax.set_aspect('equal')
+        
+        if save_filename is not None:
+            plt.savefig(save_filename + '.pdf', bbox_inches='tight')
+        
 
     def CopyInitialState(self, fL, fR):
         """
@@ -392,9 +460,9 @@ class ShockTube:
             
             # update the conservatives for every element
             for iNode in range(1, self.nNodesHalo-1):
-                cons['u1'][iNode, it] = cons['u1'][iNode, it-1] + dt/dx * ((flux[iNode-1, 0] - flux[iNode, 0]) + source[iNode, 0]*dx)
-                cons['u2'][iNode, it] = cons['u2'][iNode, it-1] + dt/dx * ((flux[iNode-1, 1] - flux[iNode, 1]) + source[iNode, 1]*dx)
-                cons['u3'][iNode, it] = cons['u3'][iNode, it-1] + dt/dx * ((flux[iNode-1, 2] - flux[iNode, 2]) + source[iNode, 2]*dx)
+                cons['u1'][iNode, it] = cons['u1'][iNode, it-1] + dt/dx[iNode] * ((flux[iNode-1, 0] - flux[iNode, 0]) + source[iNode, 0]*dx[iNode])
+                cons['u2'][iNode, it] = cons['u2'][iNode, it-1] + dt/dx[iNode] * ((flux[iNode-1, 1] - flux[iNode, 1]) + source[iNode, 1]*dx[iNode])
+                cons['u3'][iNode, it] = cons['u3'][iNode, it-1] + dt/dx[iNode] * ((flux[iNode-1, 2] - flux[iNode, 2]) + source[iNode, 2]*dx[iNode])
 
             # update the primitives
             prim['Density'][1:-1, it], prim['Velocity'][1:-1, it], prim['Pressure'][1:-1, it], prim['Energy'][1:-1, it] = \

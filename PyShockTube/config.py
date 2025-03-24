@@ -106,6 +106,26 @@ class Config:
         except:
             return False # false by default
     
+    
+    def isMeshRefined(self):
+        try:
+            res = str(self.config_parser.get('SIMULATION', 'MESH_REFINEMENT')).lower() 
+            if res=='yes' or res=='true':
+                return True
+            else:
+                return False
+        except:
+            return False # false by default
+    
+    def getRefinementBoundaries(self):
+        start = float(self.config_parser.get('SIMULATION', 'X_START_REFINEMENT')) 
+        end = float(self.config_parser.get('SIMULATION', 'X_END_REFINEMENT')) 
+        return (start, end)
+    
+    def getNumberPointsRefinement(self):
+        return int(self.config_parser.get('SIMULATION', 'NUMBER_POINTS_REFINEMENT')) 
+        
+    
     def getTopology(self):
         try:
             return str(self.config_parser.get('GEOMETRY', 'TOPOLOGY')).lower()
