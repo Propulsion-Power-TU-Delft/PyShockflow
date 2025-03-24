@@ -117,6 +117,16 @@ class Config:
         except:
             return False # false by default
     
+    def adaptMeshRefinementExtremities(self):
+        try:
+            res = str(self.config_parser.get('SIMULATION', 'ADAPT_MESH_REFINEMENT')).lower() 
+            if res=='yes' or res=='true':
+                return True
+            else:
+                return False
+        except:
+            return False #  by default
+    
     def getRefinementBoundaries(self):
         start = float(self.config_parser.get('SIMULATION', 'X_START_REFINEMENT')) 
         end = float(self.config_parser.get('SIMULATION', 'X_END_REFINEMENT')) 

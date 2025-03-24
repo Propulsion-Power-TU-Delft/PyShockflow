@@ -107,8 +107,9 @@ class ShockTube:
             xDownstream = np.linspace(refinementCoords[1], length, pointsDownstream)
             
             # adaptation at refinement extremities
-            xUpstream = self.ComputeStretchedGridPoints(xUpstream, xRefinement, 'upstream')
-            xDownstream = self.ComputeStretchedGridPoints(xDownstream, xRefinement, 'downstream')
+            if self.config.adaptMeshRefinementExtremities():
+                xUpstream = self.ComputeStretchedGridPoints(xUpstream, xRefinement, 'upstream')
+                xDownstream = self.ComputeStretchedGridPoints(xDownstream, xRefinement, 'downstream')
             
             xNodes = np.concatenate((xUpstream[0:-1], xRefinement[0:-1], xDownstream))
         return xNodes  
