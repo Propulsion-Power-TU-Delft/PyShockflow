@@ -54,6 +54,7 @@ class ShockTube:
         self.length = self.config.getLength()
         self.nNodes = self.config.getNumberOfPoints()
         xNodes = self.GeneratePhysicalGeometry(self.length, self.nNodes)
+        self.nNodes = len(xNodes)
         self.GenerateVirtualGeometry(xNodes)
         self.PlotGridGeometry()
         
@@ -105,8 +106,11 @@ class ShockTube:
             xRefinement = np.linspace(refinementCoords[0], refinementCoords[1], pointsRefinement+1)
             xDownstream = np.linspace(refinementCoords[1], length, pointsDownstream)
             
-            xNodes = np.concatenate((xUpstream[0:-1], xRefinement[0:-1], xDownstream))
+            # adaptation at refinement extremities
+            xUpstream = self.ComputeStretchedGridPoints(xUpstream, xRefinement, 'upstream')
+            xDownstream = self.ComputeStretchedGridPoints(xDownstream, xRefinement, 'downstream')
             
+            xNodes = np.concatenate((xUpstream[0:-1], xRefinement[0:-1], xDownstream))
         return xNodes  
     
     
@@ -118,6 +122,31 @@ class ShockTube:
         dx[-1] = xNodes[-1]-xNodes[-2]
         return dx
     
+    
+    def ComputeStretchedGridPoints(self, xCoords, xRefinement, location):      
+        if location=='upstream':
+            xNew = xCoords[0:-1].copy()
+            dxMin = np.min(self.ComputeGridSpacing(xNew))
+            dxRef = np.min(self.ComputeGridSpacing(xRefinement))
+            while (dxMin-dxRef>0):
+                newPoint =  xNew[-1] + (xRefinement[0]-xNew[-1])*0.5
+                xNew = np.append(xNew, newPoint)
+                dxMin = np.min(self.ComputeGridSpacing(xNew))
+            xNew[-1] = xRefinement[0]
+            # xNew = np.append(xNew, xRefinement[0])
+        else:
+            xNew = xCoords[1:].copy()
+            dxMin = np.min(self.ComputeGridSpacing(xNew))
+            dxRef = np.min(self.ComputeGridSpacing(xRefinement))
+            while (dxMin-dxRef>0):
+                newPoint =  xNew[0] - (+xNew[0] - xRefinement[-1])*0.5
+                xNew = np.insert(xNew, 0, newPoint)
+                dxMin = np.min(self.ComputeGridSpacing(xNew))
+            xNew[0] = xRefinement[-1]
+            # xNew = np.insert(xNew, 0, xRefinement[-1])
+        return xNew
+        
+        
     
     def GenerateVirtualGeometry(self, xNodes):
         """
