@@ -9,7 +9,7 @@ import os
 resultsFile = ["../IdealGas_Analytical/solutions/Test1.pik",
                "Results/NoRefinement_NX_250_TMAX_0.250000.pik",
                "Results/Refinement-04-06_NX_250_TMAX_0.250000.pik",
-               "Results/Refined_ControlExpRatio_NX_252_TMAX_0.250000.pik"]
+               "Results/Refined_ControlExpRatio_NX_254_TMAX_0.250000.pik"]
 
 labels = ['Reference', 'Normal Grid', 'Refined Grid', 'Refined Grid with Adaptation']
 
