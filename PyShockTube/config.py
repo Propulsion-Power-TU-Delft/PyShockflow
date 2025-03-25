@@ -73,6 +73,15 @@ class Config:
         left = str(self.config_parser.get('SIMULATION', 'BOUNDARY_CONDITION_LEFT')).lower() 
         right = str(self.config_parser.get('SIMULATION', 'BOUNDARY_CONDITION_RIGHT')).lower() 
         return (left, right)
+
+    def getInletConditions(self):
+        res = str(self.config_parser.get('SIMULATION', 'INLET_CONDITIONS')).lower() 
+        res = [float(value.strip()) for value in res.split(',')]
+        return res
+    
+    def getOutletConditions(self):
+        res = float(self.config_parser.get('SIMULATION', 'OUTLET_CONDITIONS'))
+        return res
     
     def getNumericalScheme(self):
         return str(self.config_parser.get('SIMULATION', 'NUMERICAL_SCHEME')).lower() 

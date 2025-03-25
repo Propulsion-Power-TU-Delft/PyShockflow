@@ -397,6 +397,8 @@ class ShockTube:
             self.SetTransparentBoundaryConditions(it, 'left')
         elif self.BCtype[0].lower()=='periodic':
             self.SetPeriodicBoundaryConditions(it, 'left')
+        elif self.BCtype[0].lower()=='inlet':
+            self.SetInletBoundaryConditions(it, 'left')
         else:
             raise ValueError("Unknown boundary condition type on the left")
         
@@ -406,6 +408,8 @@ class ShockTube:
             self.SetTransparentBoundaryConditions(it, 'right')
         elif self.BCtype[1].lower()=='periodic':
             self.SetPeriodicBoundaryConditions(it, 'right')
+        elif self.BCtype[1].lower()=='outlet':
+            self.SetOutletBoundaryConditions(it, 'right')
         else:
             raise ValueError("Unknown boundary condition type on the right")
         
@@ -466,6 +470,60 @@ class ShockTube:
             self.solution['Velocity'][-1, iTime] = self.solution['Velocity'][1, iTime]
             self.solution['Pressure'][-1, iTime] = self.solution['Pressure'][1, iTime]
             self.solution['Energy'][-1, iTime] = self.solution['Energy'][1, iTime]
+        else:
+            raise ValueError('Unknown location specified')
+    
+    
+    def SetInletBoundaryConditions(self, iTime, location):
+        """
+        Set periodic BC at time `iTime`
+        """
+        inletConditions = self.config.getInletConditions()
+        totalPressure = inletConditions[0]
+        totalTemperature = inletConditions[1]
+        direction = inletConditions[2]
+        
+        # static pressure is the info taken from the inside
+        pressure = self.solution['Pressure'][1,iTime]
+        mach = self.fluid.ComputeMach_pt_p(totalPressure, pressure)
+        temperature = self.fluid.ComputeTemperature_Tt_M(totalTemperature, mach)
+        density = self.fluid.ComputeDensity_p_T(pressure, temperature)
+        soundSpeed = self.fluid.ComputeSoundSpeed_p_rho(pressure, density)
+        velocity = mach*soundSpeed*direction
+        energy = self.fluid.ComputeStaticEnergy_p_rho(pressure, density)
+        
+        if location=='left':
+            self.solution['Density'][0, iTime] = density
+            self.solution['Velocity'][0, iTime] = velocity
+            self.solution['Pressure'][0, iTime] = pressure
+            self.solution['Energy'][0, iTime] = energy
+        elif location=='right':
+            raise ValueError('Right inlet not implemented yet')
+        else:
+            raise ValueError('Unknown location specified')
+    
+    
+    def SetOutletBoundaryConditions(self, iTime, location):
+        """
+        Set periodic BC at time `iTime`
+        """
+        # first check if the throat is subsonic or supersonic
+        machOutlet = self.fluid.ComputeMach_u_p_rho(self.solution['Velocity'][-1,iTime], self.solution['Pressure'][-1,iTime], self.solution['Density'][-1,iTime])
+        
+        if machOutlet>=1:
+            self.SetTransparentBoundaryConditions(iTime, location) # the boundary is equivalent to a transparent condition, everything is taken from the inside
+            return
+        else:
+            pressure = self.config.getOutletConditions()
+            velocity = self.solution['Velocity'][-2,iTime]
+            density = self.solution['Density'][-2,iTime]
+            energy = self.fluid.ComputeStaticEnergy_p_rho(pressure, density)
+        
+        if location=='right':
+            self.solution['Density'][-1, iTime] = density
+            self.solution['Velocity'][-1, iTime] = velocity
+            self.solution['Pressure'][-1, iTime] = pressure
+            self.solution['Energy'][-1, iTime] = energy
         else:
             raise ValueError('Unknown location specified')
 

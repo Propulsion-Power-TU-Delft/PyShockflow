@@ -48,8 +48,15 @@ class FluidIdeal():
     def ComputeTotalPressure_p_M(self, p, M):
         return p*(1+(self.gmma-1)/2*M**2)**(self.gmma/(self.gmma-1))
     
+    def ComputeMach_pt_p(self, pt, p):
+        mach = np.sqrt( 2/(self.gmma-1) * ((pt/p)**((self.gmma-1)/self.gmma)-1) )
+        return mach
+    
     def ComputeTotalTemperature_T_M(self, T, M):
         return T*(1+(self.gmma-1)/2*M**2)
+    
+    def ComputeTemperature_Tt_M(self, Tt, M):
+        return Tt/(1+(self.gmma-1)/2*M**2)
 
 class FluidReal():
     """
