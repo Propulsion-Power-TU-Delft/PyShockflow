@@ -17,6 +17,9 @@ for i, pickleFile in enumerate(pickleList):
     with open(pickleFile, 'rb') as file:
         solution = pickle.load(file)
     
+    if i==0:
+        solution.PlotGridGeometry(pointsToJump=3, save_filename='GridGeometry')
+    
     xCoords = solution.xNodes
     density = solution.solution["Density"][1:-1,-1]
     pressure = solution.solution["Pressure"][1:-1,-1]

@@ -266,8 +266,8 @@ class ShockTube:
         nPointsPic = 10
         for i in range(0, len(diameter), pointsToJump):
             plt.plot(np.zeros(nPointsPic)+self.xNodesVirt[i], np.linspace(yLower[i], yUpper[i], nPointsPic), '-k', lw=0.5)
-        plt.xlabel(r'$x \ \rm{[-]}$')
-        plt.ylabel(r'$r \ \rm{[-]}$')
+        plt.xlabel(r'$x \ \rm{[m]}$')
+        plt.ylabel(r'$r \ \rm{[m]}$')
         
         if trueAspectRatio:
             ax = plt.gca()
