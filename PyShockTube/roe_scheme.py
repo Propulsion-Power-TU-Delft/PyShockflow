@@ -20,10 +20,8 @@ class RoeScheme_Base:
         self.pL = pL
         self.pR = pR
         self.fluid = fluid
-        try: 
+        if isinstance(fluid, FluidIdeal):
             self.gmma = fluid.gmma
-        except:
-            self.gmma = 1.4
         self.eL = fluid.ComputeStaticEnergy_p_rho(pL, rhoL)
         self.eR = fluid.ComputeStaticEnergy_p_rho(pR, rhoR)
         self.htL = self.ComputeTotalEnthalpy(rhoL, uL, pL, self.eL)
@@ -157,12 +155,15 @@ class RoeScheme_Generalized(RoeScheme_Base):
         self.deltaP = (self.pR-self.pL)
         self.deltaU = (self.uR - self.uL)
         self.deltaRho = (self.rhoR - self.rhoL)
-
-
-    def ComputeAveragedVariables(self):
-        super().ComputeAveragedVariables()
-        self.aAVG = self.RoeAVG(self.aL, self.aR)
     
+    def ComputeAveragedVariables(self):
+        """
+        Compute the Roe averaged variables for the 1D Euler equations
+        """
+        self.rhoAVG = sqrt(self.rhoL*self.rhoR)
+        self.uAVG = self.RoeAVG(self.uL, self.uR)
+        self.hAVG = self.RoeAVG(self.htL, self.htR)
+        self.aAVG = self.RoeAVG(self.aL, self.aR)
 
     def ComputeWaveStrengths(self):
         self.alphas = np.zeros(3)
