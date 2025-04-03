@@ -499,13 +499,18 @@ class ShockTube:
         
         # static pressure is the only info taken from the domain
         pressure = self.solution['Pressure'][iInternal,iTime]
-        mach = self.fluid.ComputeMach_pt_p(totalPressure, pressure)
-        temperature = self.fluid.ComputeTemperature_Tt_M(totalTemperature, mach)
-        density = self.fluid.ComputeDensity_p_T(pressure, temperature)
+        if isinstance(self.fluid, FluidIdeal):
+            mach = self.fluid.ComputeMach_pt_p(totalPressure, pressure)
+            temperature = self.fluid.ComputeTemperature_Tt_M(totalTemperature, mach)
+            density = self.fluid.ComputeDensity_p_T(pressure, temperature)
+        else:
+            raise ValueError('At the moment inlet/outlet BC are implemented only for ideal gas')
+            mach, temperature, density = self.fluid.SolveRealGasInlet(pressure, totalPressure, totalTemperature)
+        
         soundSpeed = self.fluid.ComputeSoundSpeed_p_rho(pressure, density)
         velocity = mach*soundSpeed*direction
         energy = self.fluid.ComputeStaticEnergy_p_rho(pressure, density)
-        
+            
         self.solution['Density'][iHalo, iTime] = density
         self.solution['Velocity'][iHalo, iTime] = velocity
         self.solution['Pressure'][iHalo, iTime] = pressure
@@ -567,7 +572,7 @@ class ShockTube:
         for it in range(1, self.nTime):
             print('Time step: %i of %i' %(it, self.nTime))
 
-            # compute fluxes on every internal interface
+            # compute fluxes on every internal interface starting from the interface between the left ghost point and the first physical point
             flux = np.zeros((self.nNodes+1, 3))
             for iFace in range(flux.shape[0]):
                 flux[iFace, :] = self.ComputeFluxVector(iFace, iFace+1, it-1, flux_method, high_order, limiter)
@@ -577,11 +582,10 @@ class ShockTube:
             else:
                 source = np.zeros((self.nNodesHalo,3))
             
-            # update the conservatives for every element
-            for iNode in range(1, self.nNodesHalo-1):
-                cons['u1'][iNode, it] = cons['u1'][iNode, it-1] + dt/dx[iNode] * ((flux[iNode-1, 0] - flux[iNode, 0]) + source[iNode, 0]*dx[iNode])
-                cons['u2'][iNode, it] = cons['u2'][iNode, it-1] + dt/dx[iNode] * ((flux[iNode-1, 1] - flux[iNode, 1]) + source[iNode, 1]*dx[iNode])
-                cons['u3'][iNode, it] = cons['u3'][iNode, it-1] + dt/dx[iNode] * ((flux[iNode-1, 2] - flux[iNode, 2]) + source[iNode, 2]*dx[iNode])
+            # Update the conservatives for every physical cell element (vectorized version of previous loop)
+            cons['u1'][1:-1, it] = cons['u1'][1:-1, it-1] + dt/dx[1:-1] * ((flux[0:-1, 0] - flux[1:, 0]) + source[1:-1, 0]*dx[1:-1])
+            cons['u2'][1:-1, it] = cons['u2'][1:-1, it-1] + dt/dx[1:-1] * ((flux[0:-1, 1] - flux[1:, 1]) + source[1:-1, 1]*dx[1:-1])
+            cons['u3'][1:-1, it] = cons['u3'][1:-1, it-1] + dt/dx[1:-1] * ((flux[0:-1, 2] - flux[1:, 2]) + source[1:-1, 2]*dx[1:-1])
 
             # update the primitives
             prim['Density'][1:-1, it], prim['Velocity'][1:-1, it], prim['Pressure'][1:-1, it], prim['Energy'][1:-1, it] = \
@@ -618,7 +622,8 @@ class ShockTube:
         """
         Check if nans or infs are detected and in that case stop the simulation and provide explanation
         """
-        if np.any(np.isnan(self.solution['Density'])):
+        if np.any(np.isnan(self.solution['Density'])) or np.any(np.isinf(self.solution['Density'])) or \
+            np.any(np.isnan(self.solution['Pressure'])) or np.any(np.isinf(self.solution['Pressure'])):
             print()
             print()
             print("######################  SIMULATION DIVERGED ############################")
@@ -647,10 +652,11 @@ class ShockTube:
         pressure = self.solution['Pressure'][1:-1,it]
         density = self.solution['Density'][1:-1,it]
         velocity = self.solution['Velocity'][1:-1,it]
+        dx = self.dx[1:-1]
         soundSpeed = np.zeros_like(pressure)
         for i in range(len(soundSpeed)):
             soundSpeed = self.fluid.ComputeSoundSpeed_p_rho(pressure[i], density[i])
-        cfl = (np.abs(velocity)+soundSpeed)*self.dt/self.dx
+        cfl = (np.abs(velocity)+soundSpeed)*self.dt/dx
         return cfl
         
 

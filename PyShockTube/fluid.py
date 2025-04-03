@@ -1,6 +1,7 @@
 import CoolProp.CoolProp as CP
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.optimize import fsolve
 
 
 class FluidIdeal():
@@ -133,3 +134,53 @@ class FluidReal():
     def ComputeComprFactorZ_p_rho(self, p, rho):
         Z = CP.PropsSI('Z', 'P', p, 'D', rho, self.fluid_name)
         return Z
+
+    
+    def SolveRealGasInlet(self, pressure, totPressure, totTemperature):
+        """Total quantities for real gas formulation based on the MS Thesis: "Real Gas Thermodynamics" by Nederstigt, TU Delft 2017
+
+        Args:
+            pressure (_type_): _description_
+            totPressure (_type_): _description_
+            totTemperature (_type_): _description_
+        """
+        def compute_function_residual(T_guess):
+            gamma_PT = self.Compute_gammapt_p_T(pressure, T_guess)
+            residual = totTemperature/T_guess - (totPressure/pressure)**((gamma_PT-1)/(gamma_PT))
+            return residual
+
+        temperature = fsolve(compute_function_residual, totTemperature)[0]
+        density = CP.PropsSI("D", "P", pressure, "T", temperature, self.fluid_name)        
+        gamma_pv = self.Compute_gammapv_p_rho(pressure, density)
+        mach = self.ComputeMach_pt_p_gammapv(totPressure, pressure, gamma_pv)
+        return mach, temperature, density
+    
+    
+    def Compute_gammapv_p_rho(self, p, rho):
+        cp = CP.PropsSI("Cpmass", "P", p, "D", rho, self.fluid_name)
+        cv = CP.PropsSI("Cvmass", "P", p, "D", rho, self.fluid_name)
+        dp_drho_T = CP.PropsSI("d(P)/d(D)|T", "P", p, "D", rho, self.fluid_name)
+        dp_dv_T = - rho**2 * dp_drho_T
+        gmma_pv = -1/(p*rho) * cp/cv * dp_dv_T
+        return gmma_pv
+    
+    
+    def Compute_gammapt_p_T(self, p, T):
+        rho = CP.PropsSI("D", "P", p, "T", T, self.fluid_name)
+        d_rho_dT_P = CP.PropsSI("d(D)/d(T)|P", "P", p, "T", T, self.fluid_name)
+        dv_dT_P = - d_rho_dT_P / (rho**2)
+        cp = CP.PropsSI("Cpmass", "P", p, "T", T, self.fluid_name)
+        gamma_pT = 1 / (1 - p/cp*dv_dT_P)
+        return gamma_pT
+    
+    
+    def ComputeMach_pt_p_gammapv(self, pt, p, gamma_pv):
+        """Reference to equation 8.10 Nederstigt MS thesis
+        """
+        mach = np.sqrt(2/(gamma_pv-1) * ((pt/p)**((gamma_pv-1)/gamma_pv) - 1))
+        return mach
+        
+        
+        
+
+            
