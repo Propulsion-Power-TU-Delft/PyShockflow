@@ -540,21 +540,14 @@ class ShockTube:
     
     def WriteSolution(self, it, time):        
         full_path = self.subFolder + '/' + 'step_%06i.pik' %(it)
-        outputResults = {'Time': time, 'Iteration Counter': it, 'X Coords': self.xNodesVirt, 'Primitive': self.solution, 'Fluid': self.fluid}
+        outputResults = {'Time': time, 
+                         'Iteration Counter': it, 
+                         'X Coords': self.xNodesVirt, 
+                         'Primitive': self.solution, 
+                         'Fluid': self.fluid,
+                         'Configuration': self.config}
         with open(full_path, 'wb') as file:
             pickle.dump(outputResults, file)
-        
-    
-    
-    def removeUnusedSpace(self, itMax):
-        for key in self.solutionCons.keys():
-            self.solutionCons[key] = self.solutionCons[key][:, :itMax+1]
-        
-        for key in self.solution.keys():
-            self.solution[key] = self.solution[key][:, :itMax+1]
-
-        self.timeVec = self.timeVec[:itMax+1]
-        self.nTime = len(self.timeVec)
     
     
     def ComputeSourceTerms(self, primitive):
@@ -605,7 +598,7 @@ class ShockTube:
             sys.exit()
     
     
-    def ComputeMaxCFL(self, it):
+    def ComputeMaxCFL(self):
         pressure = self.solution['Pressure'][1:-1,it]
         density = self.solution['Density'][1:-1,it]
         velocity = self.solution['Velocity'][1:-1,it]
@@ -616,7 +609,6 @@ class ShockTube:
         cfl = (np.abs(velocity)+soundSpeed)*self.dt/dx
         return cfl
         
-
 
     def ComputeFluxVector(self, il, ir, primitive, dt, flux_method, high_order, limiter):
         """
