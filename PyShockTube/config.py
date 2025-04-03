@@ -54,6 +54,12 @@ class Config:
     def getTimeMax(self):
         return float(self.config_parser.get('SIMULATION', 'TIME_MAX')) 
     
+    def getTimeStepMethod(self):
+        try:
+            return str(self.config_parser.get('SIMULATION', 'TIME_STEP_METHOD')).lower()
+        except:
+            return 'constant'
+    
     def getFluidName(self):
         return str(self.config_parser.get('FLUID', 'FLUID_NAME'))
     

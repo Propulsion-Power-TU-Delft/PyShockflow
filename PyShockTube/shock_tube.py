@@ -59,9 +59,9 @@ class ShockTube:
         self.PlotGridGeometry()
         
         # compute dt
+        self.cflMax = self.config.getCFLMax()
         self.timeMax = self.config.getTimeMax()
         self.timeVec = self.ComputeTimeArray()
-        self.dt = self.timeVec[1]-self.timeVec[0]
         self.nTime = len(self.timeVec)
         
         # Boundary Conditions
@@ -200,13 +200,18 @@ class ShockTube:
     
     
     def ComputeTimeArray(self):
-        # compute dt
-        maxWaveSpeed = np.sqrt(1.4*np.max([self.pressureLeft, self.pressureRight])/np.min([self.densityLeft, self.densityRight]))+np.max([self.velocityLeft, self.velocityRight])  # brutal approximation max eigenvalue
-        maxCFL = self.config.getCFLMax() 
-        timestepMax = maxCFL * np.min(self.dx) / maxWaveSpeed
-        maxTime = self.config.getTimeMax()
-        nt = int(maxTime/timestepMax)        
-        timeVector = np.linspace(0, self.timeMax, nt)
+        timeStepMethod = self.config.getTimeStepMethod()
+        if timeStepMethod.lower()=='constant':
+            maxWaveSpeed = np.sqrt(1.4*np.max([self.pressureLeft, self.pressureRight])/np.min([self.densityLeft, self.densityRight]))+np.max([self.velocityLeft, self.velocityRight])  # brutal approximation max eigenvalue
+            maxCFL = self.config.getCFLMax() 
+            timestepMax = maxCFL * np.min(self.dx) / maxWaveSpeed
+            maxTime = self.config.getTimeMax()
+            nt = int(maxTime/timestepMax)        
+            timeVector = np.linspace(0, self.timeMax, nt)
+        else:
+            # we don't know how many time-steps we will need. Fix the max size to 1e6
+            self.maxTimeStepsAdaptive = int(250)
+            timeVector = np.zeros(self.maxTimeStepsAdaptive+1)
         return timeVector
         
     def InstantiateSolutionArrays(self):
@@ -566,12 +571,14 @@ class ShockTube:
         # short aliases
         cons = self.solutionCons
         prim = self.solution
-        dx, dt = self.dx, self.dt
         
         # time-steps loop
         for it in range(1, self.nTime):
-            print('Time step: %i of %i' %(it, self.nTime))
-
+            # print('Time step: %i of %i' %(it, self.nTime))
+            dt = self.ComputeTimeStep(it-1)
+            self.timeVec[it] = self.timeVec[it-1] + dt            
+            print(f"Iteration: {it}, Progress in Time {(self.timeVec[it] / self.timeMax*100):.3f} %")
+            
             # compute fluxes on every internal interface starting from the interface between the left ghost point and the first physical point
             flux = np.zeros((self.nNodes+1, 3))
             for iFace in range(flux.shape[0]):
@@ -583,9 +590,9 @@ class ShockTube:
                 source = np.zeros((self.nNodesHalo,3))
             
             # Update the conservatives for every physical cell element (vectorized version of previous loop)
-            cons['u1'][1:-1, it] = cons['u1'][1:-1, it-1] + dt/dx[1:-1] * ((flux[0:-1, 0] - flux[1:, 0]) + source[1:-1, 0]*dx[1:-1])
-            cons['u2'][1:-1, it] = cons['u2'][1:-1, it-1] + dt/dx[1:-1] * ((flux[0:-1, 1] - flux[1:, 1]) + source[1:-1, 1]*dx[1:-1])
-            cons['u3'][1:-1, it] = cons['u3'][1:-1, it-1] + dt/dx[1:-1] * ((flux[0:-1, 2] - flux[1:, 2]) + source[1:-1, 2]*dx[1:-1])
+            cons['u1'][1:-1, it] = cons['u1'][1:-1, it-1] + dt/self.dx[1:-1] * ((flux[0:-1, 0] - flux[1:, 0]) + source[1:-1, 0]*self.dx[1:-1])
+            cons['u2'][1:-1, it] = cons['u2'][1:-1, it-1] + dt/self.dx[1:-1] * ((flux[0:-1, 1] - flux[1:, 1]) + source[1:-1, 1]*self.dx[1:-1])
+            cons['u3'][1:-1, it] = cons['u3'][1:-1, it-1] + dt/self.dx[1:-1] * ((flux[0:-1, 2] - flux[1:, 2]) + source[1:-1, 2]*self.dx[1:-1])
 
             # update the primitives
             prim['Density'][1:-1, it], prim['Velocity'][1:-1, it], prim['Pressure'][1:-1, it], prim['Energy'][1:-1, it] = \
@@ -595,9 +602,33 @@ class ShockTube:
             
             # set boundary conditions to update the ghost points for the new iteration
             self.SetBoundaryConditions(it)
-
+            
+            if self.timeVec[it] >= self.timeMax:
+                self.removeUnusedSpace(it)
+                break
+        
         print(" "*34 + "END SOLVER")
         print("="*80)
+    
+    def ComputeTimeStep(self, it):
+        if self.config.getTimeStepMethod()=='constant':
+            return self.timeVec[it+1] - self.timeVec[it]
+        else:
+            velocity = self.solution['Velocity'][1:-1, it]
+            speedOfSound = self.fluid.ComputeSoundSpeed_p_rho(self.solution['Pressure'][1:-1, it], self.solution['Density'][1:-1, it])
+            dtMax = np.min(self.dx[1:-1] * self.cflMax / (np.abs(velocity)+speedOfSound))
+            return dtMax
+    
+    
+    def removeUnusedSpace(self, itMax):
+        for key in self.solutionCons.keys():
+            self.solutionCons[key] = self.solutionCons[key][:, :itMax+1]
+        
+        for key in self.solution.keys():
+            self.solution[key] = self.solution[key][:, :itMax+1]
+
+        self.timeVec = self.timeVec[:itMax+1]
+        self.nTime = len(self.timeVec)
     
     
     def ComputeSourceTerms(self, it):
