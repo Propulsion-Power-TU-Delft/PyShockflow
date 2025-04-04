@@ -32,6 +32,7 @@ class PostProcess():
                 if iFile == 0:
                     nNodesVirtual = result['Primitive']['Pressure'].shape[0]
                     self.xNodesVirtual = result['X Coords']
+                    self.area = result['Area Tube']
                     self.iterationCounter = result['Iteration Counter']
                     self.fluid = result['Fluid']
                     self.config = result['Configuration']
@@ -49,7 +50,7 @@ class PostProcess():
         shutil.rmtree(filepath)
         os.makedirs(filepath, exist_ok=True)
         with open(filepath + '/Results.pik', 'wb') as file:
-            pickle.dump({'X Coords': self.xNodesVirtual, 'Time': self.timeVec, 'Primitive': self.solution, 'Fluid': self.fluid, 'Configuration': self.config}, file)
+            pickle.dump({'X Coords': self.xNodesVirtual, 'Area': self.area, 'Time': self.timeVec, 'Primitive': self.solution, 'Fluid': self.fluid, 'Configuration': self.config}, file)
         print(f"Regrouped all the times in a single file: {filepath}/Results.pik")
     
     
@@ -57,6 +58,7 @@ class PostProcess():
         with open(filepath + '/' + inputFile, 'rb') as file:
             result = pickle.load(file)
             self.xNodesVirtual = result['X Coords']
+            self.area = result['Area']
             self.timeVec = result['Time']
             self.solution = result['Primitive']
             self.fluid = result['Fluid']

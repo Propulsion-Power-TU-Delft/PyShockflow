@@ -542,7 +542,8 @@ class ShockTube:
         full_path = self.subFolder + '/' + 'step_%06i.pik' %(it)
         outputResults = {'Time': time, 
                          'Iteration Counter': it, 
-                         'X Coords': self.xNodesVirt, 
+                         'X Coords': self.xNodesVirt,
+                         'Area Tube': self.areaTube,
                          'Primitive': self.solution, 
                          'Fluid': self.fluid,
                          'Configuration': self.config}
