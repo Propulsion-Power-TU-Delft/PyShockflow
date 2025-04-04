@@ -3,14 +3,25 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import pickle
+import shutil
 
 class PostProcess():
     def __init__(self, filepath):
         files = [f for f in os.listdir(filepath) if os.path.isfile(os.path.join(filepath, f)) and 'pik' in f]
         files = sorted(files)
         nTimes = len(files)
-        self.time = np.zeros(nTimes)
         
+        if nTimes == 0:
+            raise ValueError('No files found in the directory')
+        elif nTimes > 1: # reassemble the results in a single pickle file
+            self.regroupSingleResults(filepath, files)
+        else:
+            self.readGlobalResult(filepath, files[0])
+        
+    
+    def regroupSingleResults(self, filepath, files):
+        nTimes = len(files)
+        self.time = np.zeros(nTimes)
         self.solution = {}
         
         for iFile in range(len(files)):
@@ -34,9 +45,27 @@ class PostProcess():
                 self.solution['Density'][:, iFile] = result['Primitive']['Density']
                 self.solution['Velocity'][:, iFile] = result['Primitive']['Velocity']
                 self.solution['Pressure'][:, iFile] = result['Primitive']['Pressure']
+        
+        shutil.rmtree(filepath)
+        os.makedirs(filepath, exist_ok=True)
+        with open(filepath + '/Results.pik', 'wb') as file:
+            pickle.dump({'X Coords': self.xNodesVirtual, 'Time': self.timeVec, 'Primitive': self.solution, 'Fluid': self.fluid, 'Configuration': self.config}, file)
+        print(f"Regrouped all the times in a single file: {filepath}/Results.pik")
     
     
-    def ShowAnimation(self):
+    def readGlobalResult(self, filepath, inputFile):
+        with open(filepath + '/' + inputFile, 'rb') as file:
+            result = pickle.load(file)
+            self.xNodesVirtual = result['X Coords']
+            self.timeVec = result['Time']
+            self.solution = result['Primitive']
+            self.fluid = result['Fluid']
+            self.config = result['Configuration']
+        
+        print(f"Read the file: {filepath}/{inputFile}")
+    
+    
+    def ShowAnimation(self, maxSnapshots=250):
         """
         Show animation of the results at all time instants
         """
@@ -57,7 +86,9 @@ class PostProcess():
         velocity_limits = plot_limits(self.solution['Velocity'])
         pressure_limits = plot_limits(self.solution['Pressure'])
         mach_limitis = plot_limits(mach)
-        for it in range(len(self.timeVec)):
+        
+        interval = int(nt/maxSnapshots)
+        for it in range(0, len(self.timeVec), interval):
             for row in ax:
                 for col in row:
                     col.cla()
@@ -72,6 +103,9 @@ class PostProcess():
             ax[1, 0].plot(self.xNodesVirtual, self.solution['Pressure'][:, it], '-C2o', ms=2)
             ax[1, 0].set_ylabel(r'Pressure [Pa]')
             ax[1, 0].set_ylim(pressure_limits)
+            
+            for ix in range(ni):
+                mach[ix] = self.solution['Velocity'][ix,it]/self.fluid.ComputeSoundSpeed_p_rho(self.solution['Pressure'][ix,it], self.solution['Density'][ix,it])
 
             ax[1, 1].plot(self.xNodesVirtual, mach[:, it], '-C3o', ms=2)
             ax[1, 1].set_ylabel(r'Mach [-]')
