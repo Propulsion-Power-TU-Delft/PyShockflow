@@ -633,7 +633,7 @@ class ShockTube:
             if self.fluid_model!='ideal':
                 raise ValueError('Godunov scheme is available only for ideal gas model')
             nx, nt = 51, 51
-            x = np.linspace(-self.dx/2, self.dx/2, nx)
+            x = np.linspace(-self.dx[il]/2, self.dx[ir]/2, nx)
             t = np.linspace(0, dt, nt)
             riem = RiemannProblem(x, t)
             riem.InitializeState([rhoL, rhoR, uL, uR, pL, pR])

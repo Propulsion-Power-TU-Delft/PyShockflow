@@ -47,22 +47,30 @@ class PostProcess():
                 self.solution['Velocity'][:, iFile] = result['Primitive']['Velocity']
                 self.solution['Pressure'][:, iFile] = result['Primitive']['Pressure']
         
+        globalOutput = {'X Coords': self.xNodesVirtual, 
+                        'Area': self.area,
+                        'Time': self.timeVec, 
+                        'Primitive': self.solution, 
+                        'Fluid': self.fluid, 
+                        'Configuration': self.config}
+        
         shutil.rmtree(filepath)
         os.makedirs(filepath, exist_ok=True)
         with open(filepath + '/Results.pik', 'wb') as file:
-            pickle.dump({'X Coords': self.xNodesVirtual, 'Area': self.area, 'Time': self.timeVec, 'Primitive': self.solution, 'Fluid': self.fluid, 'Configuration': self.config}, file)
+            pickle.dump(globalOutput, file)
         print(f"Regrouped all the times in a single file: {filepath}/Results.pik")
     
     
     def readGlobalResult(self, filepath, inputFile):
         with open(filepath + '/' + inputFile, 'rb') as file:
             result = pickle.load(file)
-            self.xNodesVirtual = result['X Coords']
-            self.area = result['Area']
-            self.timeVec = result['Time']
-            self.solution = result['Primitive']
-            self.fluid = result['Fluid']
-            self.config = result['Configuration']
+        
+        self.xNodesVirtual = result['X Coords']
+        self.area = result['Area']
+        self.timeVec = result['Time']
+        self.solution = result['Primitive']
+        self.fluid = result['Fluid']
+        self.config = result['Configuration']
         
         print(f"Read the file: {filepath}/{inputFile}")
     
@@ -72,10 +80,7 @@ class PostProcess():
         Show animation of the results at all time instants
         """
         ni, nt = self.solution['Density'].shape
-        mach = np.zeros((ni, nt))
-        for i in range(ni):
-            for t in range(nt):
-                mach[i,t] = self.solution['Velocity'][i,t]/self.fluid.ComputeSoundSpeed_p_rho(self.solution['Pressure'][i,t], self.solution['Density'][i,t])
+        
         def plot_limits(f, extension=0.05):
             max = f.max()
             min = f.min()
@@ -87,7 +92,9 @@ class PostProcess():
         density_limits = plot_limits(self.solution['Density'])
         velocity_limits = plot_limits(self.solution['Velocity'])
         pressure_limits = plot_limits(self.solution['Pressure'])
-        mach_limitis = plot_limits(mach)
+        
+        mach = self.fluid.ComputeMach_u_p_rho(self.solution['Velocity'], self.solution['Pressure'], self.solution['Density'])
+        mach_limits = plot_limits(mach)
         
         interval = int(nt/maxSnapshots)
         for it in range(0, len(self.timeVec), interval):
@@ -105,13 +112,10 @@ class PostProcess():
             ax[1, 0].plot(self.xNodesVirtual, self.solution['Pressure'][:, it], '-C2o', ms=2)
             ax[1, 0].set_ylabel(r'Pressure [Pa]')
             ax[1, 0].set_ylim(pressure_limits)
-            
-            for ix in range(ni):
-                mach[ix] = self.solution['Velocity'][ix,it]/self.fluid.ComputeSoundSpeed_p_rho(self.solution['Pressure'][ix,it], self.solution['Density'][ix,it])
 
             ax[1, 1].plot(self.xNodesVirtual, mach[:, it], '-C3o', ms=2)
             ax[1, 1].set_ylabel(r'Mach [-]')
-            ax[1, 1].set_ylim(mach_limitis)
+            ax[1, 1].set_ylim(mach_limits)
 
             fig.suptitle('Time %.3e [s]' % self.timeVec[it])
 
@@ -119,5 +123,5 @@ class PostProcess():
                 for col in row:
                     col.set_xlabel('x')
                     col.grid(alpha=.3)
-            plt.pause(1e-3)
+            plt.pause(1e-6)
         
