@@ -8,6 +8,7 @@ from PyShockTube.riemann_problem import RiemannProblem
 from PyShockTube.roe_scheme import RoeScheme_Base, RoeScheme_Generalized
 from PyShockTube.muscl_hancock import MusclHancock
 from PyShockTube.fluid import FluidIdeal, FluidReal
+from PyShockTube.post_process import PostProcess
 from PyShockTube.euler_functions import *
 
 
@@ -528,6 +529,11 @@ class ShockTube:
             iTime += 1
             
         print(" "*34 + "END SOLVER")
+        print("="*80)
+        
+        print(" "*25 + "FINAL ASSEMBLY OF THE RESULTS")
+        solution = PostProcess(self.subFolder)
+        print(" "*34 + "END ASSEMBLER")
         print("="*80)
     
     

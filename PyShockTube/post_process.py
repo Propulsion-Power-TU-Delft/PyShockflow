@@ -24,6 +24,7 @@ class PostProcess():
         self.time = np.zeros(nTimes)
         self.solution = {}
         
+        print("Regrouping all the results in a single file...")
         for iFile in range(len(files)):
             print(f"Reading File {iFile+1} of {len(files)}")
             with open(filepath + '/' + files[iFile], 'rb') as file:
@@ -54,6 +55,7 @@ class PostProcess():
                         'Fluid': self.fluid, 
                         'Configuration': self.config}
         
+        print("Replacing all individual files with a single pickle (this could take a while) ...")
         shutil.rmtree(filepath)
         os.makedirs(filepath, exist_ok=True)
         with open(filepath + '/Results.pik', 'wb') as file:
