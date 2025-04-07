@@ -624,7 +624,7 @@ class ShockTube:
         
         # flow reconstruction if high_order=True
         if (high_order and il>2 and ir<self.nNodesHalo-2):
-            rhoL, uL, pL, rhoR, uR, pR = self.MUSCL_VanAlbada_Reconstruction(il, ir, it)  # currently working
+            rhoL, uL, pL, rhoR, uR, pR = self.MUSCL_VanAlbada_Reconstruction(il, ir)  # currently working
             # rhoL, uL, pL, rhoR, uR, pR = self.MUSCL_Reconstruction(il, ir, it, limiter)  # at the moment creates oscillations with every limiter for some reasons
         else:
             rhoL = primitive['Density'][il]
@@ -707,16 +707,16 @@ class ShockTube:
         return flux
 
 
-    def MUSCL_VanAlbada_Reconstruction(self, il, ir, it):
+    def MUSCL_VanAlbada_Reconstruction(self, il, ir):
         """
         MUSCL approach with Van Albada limiter. Formulation taken from pag. 110 of "Computational Fluid Dynamics book, by Blazek", where kappa=0,
         and the reconstruction with limiter is embedded in a single formula
         """
         # states left, left minus 1, right, right plus one
-        U_l = np.array([self.solution['Density'][il, it], self.solution['Velocity'][il, it], self.solution['Pressure'][il, it]])
-        U_lm = np.array([self.solution['Density'][il-1, it], self.solution['Velocity'][il-1, it], self.solution['Pressure'][il-1, it]])
-        U_r = np.array([self.solution['Density'][ir, it], self.solution['Velocity'][ir, it], self.solution['Pressure'][ir, it]])
-        U_rp = np.array([self.solution['Density'][ir+1, it], self.solution['Velocity'][ir+1, it], self.solution['Pressure'][ir+1, it]])
+        U_l = np.array([self.solution['Density'][il], self.solution['Velocity'][il], self.solution['Pressure'][il]])
+        U_lm = np.array([self.solution['Density'][il-1], self.solution['Velocity'][il-1], self.solution['Pressure'][il-1]])
+        U_r = np.array([self.solution['Density'][ir], self.solution['Velocity'][ir], self.solution['Pressure'][ir]])
+        U_rp = np.array([self.solution['Density'][ir+1], self.solution['Velocity'][ir+1], self.solution['Pressure'][ir+1]])
 
         # unlimited jumps
         aR = U_rp-U_r
