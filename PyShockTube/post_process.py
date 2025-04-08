@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import os
 import pickle
 import shutil
+from PyShockTube.fluid import FluidIdeal, FluidReal
 
 class PostProcess():
     def __init__(self, filepath):
@@ -95,7 +96,14 @@ class PostProcess():
         velocity_limits = plot_limits(self.solution['Velocity'])
         pressure_limits = plot_limits(self.solution['Pressure'])
         
-        mach = self.fluid.ComputeMach_u_p_rho(self.solution['Velocity'], self.solution['Pressure'], self.solution['Density'])
+        if isinstance(self.fluid, FluidIdeal):
+            mach = self.fluid.ComputeMach_u_p_rho(self.solution['Velocity'], self.solution['Pressure'], self.solution['Density'])
+        else:
+            mach = np.zeros((ni, nt))
+            for i in range(ni):
+                for j in range(nt):
+                    mach[i, j] = self.fluid.ComputeMach_u_p_rho(self.solution['Velocity'][i, j], self.solution['Pressure'][i, j], self.solution['Density'][i, j])
+
         mach_limits = plot_limits(mach)
         
         interval = int(nt/maxSnapshots)

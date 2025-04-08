@@ -417,18 +417,7 @@ class ShockTube:
         
         # static pressure is the only info taken from the domain
         pressure = self.solution['Pressure'][iInternal]
-        if isinstance(self.fluid, FluidIdeal):
-            mach = self.fluid.ComputeMach_pt_p(totalPressure, pressure)
-            temperature = self.fluid.ComputeTemperature_Tt_M(totalTemperature, mach)
-            density = self.fluid.ComputeDensity_p_T(pressure, temperature)
-        else:
-            raise ValueError('At the moment inlet/outlet BC are implemented only for ideal gas')
-            mach, temperature, density = self.fluid.SolveRealGasInlet(pressure, totalPressure, totalTemperature)
-        
-        soundSpeed = self.fluid.ComputeSoundSpeed_p_rho(pressure, density)
-        velocity = mach*soundSpeed*direction
-        energy = self.fluid.ComputeStaticEnergy_p_rho(pressure, density)
-            
+        density, velocity, energy = self.fluid.ComputeInletQuantities(pressure, totalPressure, totalTemperature, direction)
         self.solution['Density'][iHalo] = density
         self.solution['Velocity'][iHalo] = velocity
         self.solution['Pressure'][iHalo] = pressure
@@ -518,7 +507,7 @@ class ShockTube:
             self.solution['Density'][1:-1], self.solution['Velocity'][1:-1], self.solution['Pressure'][1:-1], self.solution['Energy'][1:-1] = \
                 GetPrimitivesFromConservatives(conservativeNew['u1'][1:-1], conservativeNew['u2'][1:-1], conservativeNew['u3'][1:-1], self.fluid)
             
-            self.checkSimulationStatus()
+            self.checkSimulationStatus(dt)
             
             # set boundary conditions to update the ghost points for the new iteration
             self.SetBoundaryConditions()
@@ -575,7 +564,7 @@ class ShockTube:
         return source_terms
     
     
-    def checkSimulationStatus(self):
+    def checkSimulationStatus(self, dt):
         """
         Check if nans or infs are detected and in that case stop the simulation and provide explanation
         """
@@ -585,13 +574,9 @@ class ShockTube:
             print()
             print("######################  SIMULATION DIVERGED ############################")
             print('NaNs detected in density. Simulation stopped.')
-            cfl = self.ComputeMaxCFL() # use the previous time step to compute where the solution had CFL related problems
-            dum = it-1
-            while np.any(np.isnan(cfl)):
-                dum -=1
-                cfl = self.ComputeMaxCFL(dum)
+            cfl = self.ComputeMaxCFL(dt) # use the previous time step to compute where the solution had CFL related problems
             print("Maximum CFL number found: %.3f" %(np.max(cfl)))
-            print("At location x: %.3f [m], at time: %.3e [s]" %(self.xNodesVirt[np.argmax(cfl)], self.timeVec[dum]))
+            print("At location x: %.3f [m]" %(self.xNodesVirt[np.argmax(cfl)]))
             print("Visualize the plot to understand critical locations, and decrease CFL_MAX input setting.")
             print("###############################  EXIT ##################################")
             print()
@@ -605,15 +590,15 @@ class ShockTube:
             sys.exit()
     
     
-    def ComputeMaxCFL(self):
-        pressure = self.solution['Pressure'][1:-1,it]
-        density = self.solution['Density'][1:-1,it]
-        velocity = self.solution['Velocity'][1:-1,it]
+    def ComputeMaxCFL(self, dt):
+        pressure = self.solution['Pressure'][1:-1]
+        density = self.solution['Density'][1:-1]
+        velocity = self.solution['Velocity'][1:-1]
         dx = self.dx[1:-1]
         soundSpeed = np.zeros_like(pressure)
         for i in range(len(soundSpeed)):
             soundSpeed = self.fluid.ComputeSoundSpeed_p_rho(pressure[i], density[i])
-        cfl = (np.abs(velocity)+soundSpeed)*self.dt/dx
+        cfl = (np.abs(velocity)+soundSpeed)*dt/dx
         return cfl
         
 
