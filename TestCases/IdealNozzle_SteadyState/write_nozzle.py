@@ -20,6 +20,7 @@ x = np.linspace(xStart, xEnd, nPoints)
 Acoeff = -4*(A_throat-A_tube)
 Bcoeff = -Acoeff
 Ccoeff = A_tube
+print(f"The equation of the nozzle is: A = {Acoeff:.3e}*z^2 + {Bcoeff:.3e}*z + {Ccoeff:.3e}")
 z = (x-x[0])/(x[-1]-x[0])
 Area = (Acoeff*z**2 + Bcoeff*z + Ccoeff)
 
