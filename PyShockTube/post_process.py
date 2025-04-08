@@ -78,7 +78,7 @@ class PostProcess():
         print(f"Read the file: {filepath}/{inputFile}")
     
     
-    def ShowAnimation(self, maxSnapshots=250):
+    def ShowAnimation(self, jumpInstants=250):
         """
         Show animation of the results at all time instants
         """
@@ -106,7 +106,7 @@ class PostProcess():
 
         mach_limits = plot_limits(mach)
         
-        interval = int(nt/maxSnapshots)
+        interval = jumpInstants
         for it in range(0, len(self.timeVec), interval):
             for row in ax:
                 for col in row:

@@ -4,6 +4,7 @@ import os
 import pickle
 import csv
 import sys
+import copy
 from PyShockTube.riemann_problem import RiemannProblem
 from PyShockTube.roe_scheme import RoeScheme_Base, RoeScheme_Generalized
 from PyShockTube.muscl_hancock import MusclHancock
@@ -86,6 +87,15 @@ class ShockTube:
         if self.fluid_model.lower()=='ideal':
             print("Fluid cp/cv ratio [-]:                       %.2e" %self.gmma)
             print("Fluid gas constant [J/kgK]:                  %.2e" %self.Rgas)
+        
+        self.InstantiateSolutionArrays()
+        self.InstantiateSolutionArraysConservatives()
+        restartFile = self.config.getRestartFile()
+        if restartFile is not None:
+            self.InitializeFromRestartFile(restartFile)
+        else:
+            self.InitialConditionsLeftRight()
+        self.SetBoundaryConditions()
     
     
     def prepareOutputPaths(self):
@@ -251,6 +261,16 @@ class ShockTube:
         initialConditions['Energy'] = self.fluid.ComputeStaticEnergy_p_rho(initialConditions['Pressure'], initialConditions['Density'])
         for name in self.solutionNames:
             self.solution[name] = self.CopyInitialState(initialConditions[name][0], initialConditions[name][1])
+    
+    def InitializeFromRestartFile(self, restartFile):
+        with open(restartFile, 'rb') as file:
+            restartData = pickle.load(file)
+                
+        for name in ['Density', 'Velocity', 'Pressure']:
+            self.solution[name] = np.interp(self.xNodesVirt, restartData['X Coords'], restartData['Primitive'][name][:,-1])
+        
+        for i in range(self.solution['Energy'].shape[0]):
+            self.solution['Energy'][i] = self.fluid.ComputeStaticEnergy_p_rho(self.solution['Pressure'][i], self.solution['Density'][i])
     
 
     def InitialConditionsArrays(self, dictIn):
@@ -474,7 +494,6 @@ class ShockTube:
         conservativeOld = self.solutionCons.copy()
         conservativeNew = self.solutionCons.copy()
         primitiveOld = self.solution.copy()
-        primitiveNew = self.solution.copy()
         
         time = 0
         iTime = 1
@@ -485,7 +504,8 @@ class ShockTube:
             if time + dt > self.timeMax:
                 dt = self.timeMax - time
             newTime = time + dt
-                    
+
+            # if self.config.getSimulationType()=='unsteady':
             print(f"Iteration: {iTime}, Progress in Time {((newTime)/self.timeMax * 100):.3f} %")
             
             # compute fluxes on every internal interface
@@ -502,10 +522,13 @@ class ShockTube:
             conservativeNew['u1'][1:-1] = conservativeOld['u1'][1:-1] + dt/self.dx[1:-1] * ((flux[0:-1, 0] - flux[1:, 0]) + source[1:-1, 0]*self.dx[1:-1])
             conservativeNew['u2'][1:-1] = conservativeOld['u2'][1:-1] + dt/self.dx[1:-1] * ((flux[0:-1, 1] - flux[1:, 1]) + source[1:-1, 1]*self.dx[1:-1])
             conservativeNew['u3'][1:-1] = conservativeOld['u3'][1:-1] + dt/self.dx[1:-1] * ((flux[0:-1, 2] - flux[1:, 2]) + source[1:-1, 2]*self.dx[1:-1])
-
+            
             # update the primitives
             self.solution['Density'][1:-1], self.solution['Velocity'][1:-1], self.solution['Pressure'][1:-1], self.solution['Energy'][1:-1] = \
                 GetPrimitivesFromConservatives(conservativeNew['u1'][1:-1], conservativeNew['u2'][1:-1], conservativeNew['u3'][1:-1], self.fluid)
+
+            # if self.config.getSimulationType()=='steady':
+            #     self.printInfoResiduals(conservativeNew, conservativeOld)
             
             self.checkSimulationStatus(dt)
             
@@ -544,6 +567,21 @@ class ShockTube:
                          'Configuration': self.config}
         with open(full_path, 'wb') as file:
             pickle.dump(outputResults, file)
+    
+    
+    def printInfoResiduals(self, conservativeNew, conservativeOld):
+        eqResiduals = []
+        eqResiduals.append(conservativeNew['u1'] - conservativeOld['u1'])
+        eqResiduals.append(conservativeNew['u2'] - conservativeOld['u2'])
+        eqResiduals.append(conservativeNew['u3'] - conservativeOld['u3'])
+
+        res = np.zeros(len(eqResiduals))
+        for i in range(len(res)):
+            res[i] = np.linalg.norm(eqResiduals[i])/len(eqResiduals[i])
+            if res[i]!=0:
+                res[i] = np.log10(res[i])
+        
+        print('Residuals: %.6f, %.6f, %.6f' %(res[0], res[1], res[2]))
     
     
     def ComputeSourceTerms(self, primitive):

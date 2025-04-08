@@ -169,6 +169,9 @@ class FluidReal():
             return residual
 
         temperature = fsolve(compute_function_residual, totTemperature)[0]
+        # if temperature > totTemperature or temperature < totTemperature/2:
+        #     temperature = totTemperature*0.9
+
         
         density = self.ComputeDensity_p_T(pressure, temperature)
         gamma_pv = self.Compute_gammapv_p_rho(pressure, density)
