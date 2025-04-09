@@ -437,6 +437,8 @@ class ShockTube:
         
         # static pressure is the only info taken from the domain
         pressure = self.solution['Pressure'][iInternal]
+        if pressure>=totalPressure: # avoid the problems that can cause
+            pressure = 0.99*totalPressure   
         density, velocity, energy = self.fluid.ComputeInletQuantities(pressure, totalPressure, totalTemperature, direction)
         self.solution['Density'][iHalo] = density
         self.solution['Velocity'][iHalo] = velocity
@@ -474,7 +476,7 @@ class ShockTube:
             
 
 
-    def SolveSystem(self, high_order=False, limiter='Van Albada'):
+    def SolveSystem(self):
         """
         Solve the equations explicitly in time (forward Euler) using a certain flux_method (`Godunov`, `Roe`, `WAF`). high_order
         specifies if applying or not high order reconstruction with limiters. At the moment only type one is working -> simply
@@ -491,54 +493,42 @@ class ShockTube:
         print()
 
         # short aliases
-        conservativeOld = self.solutionCons.copy()
-        conservativeNew = self.solutionCons.copy()
         primitiveOld = self.solution.copy()
         
         time = 0
         iTime = 1
         
-        # time-steps loop
+        # main loop
         while time < self.timeMax:
             dt = self.ComputeTimeStep(primitiveOld)
             if time + dt > self.timeMax:
                 dt = self.timeMax - time
             newTime = time + dt
-
-            # if self.config.getSimulationType()=='unsteady':
-            print(f"Iteration: {iTime}, Progress in Time {((newTime)/self.timeMax * 100):.3f} %")
             
-            # compute fluxes on every internal interface
-            flux = np.zeros((self.nNodes+1, 3))
-            for iFace in range(flux.shape[0]):
-                flux[iFace, :] = self.ComputeFluxVector(iFace, iFace+1, primitiveOld, dt, flux_method, high_order, limiter)
+            residuals = self.ComputeResiduals(primitiveOld, dt)
             
-            if self.topology.lower()=='nozzle':
-                source = self.ComputeSourceTerms(primitiveOld)
-            else:
-                source = np.zeros((self.nNodesHalo,3))
+            self.updateConservativeSolution(residuals)
             
-            # Update the conservatives for every physical cell element (vectorized version)
-            conservativeNew['u1'][1:-1] = conservativeOld['u1'][1:-1] + dt/self.dx[1:-1] * ((flux[0:-1, 0] - flux[1:, 0]) + source[1:-1, 0]*self.dx[1:-1])
-            conservativeNew['u2'][1:-1] = conservativeOld['u2'][1:-1] + dt/self.dx[1:-1] * ((flux[0:-1, 1] - flux[1:, 1]) + source[1:-1, 1]*self.dx[1:-1])
-            conservativeNew['u3'][1:-1] = conservativeOld['u3'][1:-1] + dt/self.dx[1:-1] * ((flux[0:-1, 2] - flux[1:, 2]) + source[1:-1, 2]*self.dx[1:-1])
+            self.updatePrimitivesFromConservatives()
             
-            # update the primitives
-            self.solution['Density'][1:-1], self.solution['Velocity'][1:-1], self.solution['Pressure'][1:-1], self.solution['Energy'][1:-1] = \
-                GetPrimitivesFromConservatives(conservativeNew['u1'][1:-1], conservativeNew['u2'][1:-1], conservativeNew['u3'][1:-1], self.fluid)
-
-            # if self.config.getSimulationType()=='steady':
-            #     self.printInfoResiduals(conservativeNew, conservativeOld)
+            if self.config.getSimulationType()=='unsteady':
+                print(f"Iteration: {iTime}, Progress in Time {((newTime)/self.timeMax * 100):.3f} %")
+            if self.config.getSimulationType()=='steady':
+                self.printInfoResiduals(iTime, newTime, residuals)
             
+            # check everything is ok
             self.checkSimulationStatus(dt)
             
             # set boundary conditions to update the ghost points for the new iteration
             self.SetBoundaryConditions()
             
+            # write the current time to a solution file
             self.WriteSolution(iTime, newTime)
             
+            # update the time and iteration counter
             time += dt  
             iTime += 1
+                
             
         print(" "*34 + "END SOLVER")
         print("="*80)
@@ -547,6 +537,42 @@ class ShockTube:
         solution = PostProcess(self.subFolder)
         print(" "*34 + "END ASSEMBLER")
         print("="*80)
+    
+    
+    def ComputeResiduals(self, primitives, dt):
+        limiter='Van Albada' # only this at the moment
+        flux_method = self.config.getNumericalScheme()
+        high_order = self.config.getMUSCLReconstruction()
+        
+        # compute advection fluxes on every internal interface
+        flux = np.zeros((self.nNodes+1, 3))
+        for iFace in range(flux.shape[0]):
+            flux[iFace, :] = self.ComputeFluxVector(iFace, iFace+1, primitives, dt, flux_method, high_order, limiter)
+        
+        # compute the source terms
+        if self.topology.lower()=='nozzle':
+            source = self.ComputeSourceTerms(primitives)
+        else:
+            source = np.zeros((self.nNodesHalo,3))
+        
+        # assemble the full residual vector on every physical node
+        residuals = np.zeros((self.nNodes,3))
+        for iDim in range(3):
+            residuals[:,iDim] = dt/self.dx[1:-1] * ((flux[0:-1, iDim] - flux[1:, iDim]) + source[1:-1, iDim]*self.dx[1:-1])
+        return residuals
+
+    
+    def updateConservativeSolution(self, residuals):
+        self.solutionCons['u1'][1:-1] += residuals[:,0]
+        self.solutionCons['u2'][1:-1] += residuals[:,1]
+        self.solutionCons['u3'][1:-1] += residuals[:,2]
+    
+    
+    def updatePrimitivesFromConservatives(self):
+        self.solution['Density'][1:-1], self.solution['Velocity'][1:-1], self.solution['Pressure'][1:-1], self.solution['Energy'][1:-1] = \
+                GetPrimitivesFromConservatives(self.solutionCons['u1'][1:-1], self.solutionCons['u2'][1:-1], self.solutionCons['u3'][1:-1], self.fluid)
+        
+        
     
     
     def ComputeTimeStep(self, primitive):
@@ -569,19 +595,14 @@ class ShockTube:
             pickle.dump(outputResults, file)
     
     
-    def printInfoResiduals(self, conservativeNew, conservativeOld):
-        eqResiduals = []
-        eqResiduals.append(conservativeNew['u1'] - conservativeOld['u1'])
-        eqResiduals.append(conservativeNew['u2'] - conservativeOld['u2'])
-        eqResiduals.append(conservativeNew['u3'] - conservativeOld['u3'])
-
-        res = np.zeros(len(eqResiduals))
-        for i in range(len(res)):
-            res[i] = np.linalg.norm(eqResiduals[i])/len(eqResiduals[i])
-            if res[i]!=0:
-                res[i] = np.log10(res[i])
-        
-        print('Residuals: %.6f, %.6f, %.6f' %(res[0], res[1], res[2]))
+    def printInfoResiduals(self, iTime, time, residuals):
+        res = np.zeros(3)
+        for iEq in range(3):
+            res[iEq] = np.linalg.norm(residuals[:,iEq])/len(residuals[:,iEq])
+            if res[iEq]!=0:
+                res[iEq] = np.log10(res[iEq])
+        timeProgress = time/self.timeMax * 100
+        print('Iteration %i    Progress in Time %.3f%%    Residuals: %.6f, %.6f, %.6f' %(iTime, timeProgress, res[0], res[1], res[2]))
     
     
     def ComputeSourceTerms(self, primitive):
@@ -762,109 +783,6 @@ class ShockTube:
         return U_l_rec[0], U_l_rec[1], U_l_rec[2], U_r_rec[0], U_r_rec[1], U_r_rec[2]
 
 
-    # def ShowAnimation(self):
-    #     """
-    #     Show animation of the results at all time instants
-    #     """
-    #     ni, nt = self.solution['Density'].shape
-    #     mach = np.zeros((ni, nt))
-    #     for i in range(ni):
-    #         for t in range(nt):
-    #             mach[i,t] = self.solution['Velocity'][i,t]/self.fluid.ComputeSoundSpeed_p_rho(self.solution['Pressure'][i,t], self.solution['Density'][i,t])
-    #     def plot_limits(f, extension=0.05):
-    #         max = f.max()
-    #         min = f.min()
-    #         left = min-(max-min)*extension
-    #         right = max+(max-min)*extension
-    #         return left, right
-        
-    #     if self.config.showAnimation():
-    #         fig, ax = plt.subplots(2, 2, figsize=(12, 8))
-    #         density_limits = plot_limits(self.solution['Density'])
-    #         velocity_limits = plot_limits(self.solution['Velocity'])
-    #         pressure_limits = plot_limits(self.solution['Pressure'])
-    #         energy_limits = plot_limits(self.solution['Energy'])
-    #         mach_limitis = plot_limits(mach)
-    #         for it in range(self.nTime):
-    #             for row in ax:
-    #                 for col in row:
-    #                     col.cla()
-    #             ax[0, 0].plot(self.xNodesVirt, self.solution['Density'][:, it], '-C0o', ms=2)
-    #             ax[0, 0].set_ylabel(r'Density [kg/m3]')
-    #             ax[0, 0].set_ylim(density_limits)
-
-    #             ax[0, 1].plot(self.xNodesVirt, self.solution['Velocity'][:, it], '-C1o', ms=2)
-    #             ax[0, 1].set_ylabel(r'Velocity [m/s]')
-    #             ax[0, 1].set_ylim(velocity_limits)
-
-    #             ax[1, 0].plot(self.xNodesVirt, self.solution['Pressure'][:, it], '-C2o', ms=2)
-    #             ax[1, 0].set_ylabel(r'Pressure [Pa]')
-    #             ax[1, 0].set_ylim(pressure_limits)
-
-    #             # ax[1, 1].plot(self.xNodesVirt, self.solution['Energy'][:, it], '-C3o', ms=2)
-    #             # ax[1, 1].set_ylabel(r'Energy')
-    #             # ax[1, 1].set_ylim(energy_limits)
-    #             ax[1, 1].plot(self.xNodesVirt, mach[:, it], '-C3o', ms=2)
-    #             ax[1, 1].set_ylabel(r'Mach [-]')
-    #             ax[1, 1].set_ylim(mach_limitis)
-
-    #             fig.suptitle('Time %.3e [s]' % self.timeVec[it])
-
-    #             for row in ax:
-    #                 for col in row:
-    #                     col.set_xlabel('x')
-    #                     col.grid(alpha=.3)
-    #             plt.pause(1e-3)
-    #         plt.show()
-    
-
-    # def ShowContourAnimation(self):
-    #     """
-    #     Show contour animation of the results for all time instants
-    #     """
-    #     xgrid = np.reshape(self.xNodes, (len(self.xNodes), 1))
-    #     xgrid = np.hstack((xgrid, xgrid))
-    #     ygrid = np.reshape(np.zeros_like(self.xNodes), (len(self.xNodes), 1))
-    #     length = self.xNodes[-1]-self.xNodes[0]
-    #     AR = 4
-    #     height = length/AR
-    #     ygrid = np.hstack((ygrid, ygrid+height))
-
-    #     def convert2D(f):
-    #         fgrid = np.reshape(f, (len(self.xNodes), 1))
-    #         fgrid = np.hstack((fgrid, fgrid))
-    #         return fgrid
-
-    #     fig, ax = plt.subplots(2, 2, figsize=(8, 5))
-    #     for it in range(self.nTime):
-    #         for row in ax:
-    #             for col in row:
-    #                 col.cla()
-    #         rhoGrid = convert2D(self.solution['Density'][1:-1, it])
-    #         uGrid = convert2D(self.solution['Velocity'][1:-1, it])
-    #         pGrid = convert2D(self.solution['Pressure'][1:-1, it])
-    #         eGrid = convert2D(self.solution['Energy'][1:-1, it])
-           
-    #         ax[0, 0].contourf(xgrid, ygrid, rhoGrid, cmap='jet', levels=20)
-    #         ax[0, 0].set_title(r'Density')
-
-    #         ax[0, 1].contourf(xgrid, ygrid, uGrid, cmap='jet', levels=20)
-    #         ax[0, 1].set_title(r'Velocity')
-
-    #         ax[1, 0].contourf(xgrid, ygrid, pGrid, cmap='jet', levels=20)
-    #         ax[1, 0].set_title(r'Pressure')
-
-    #         ax[1, 1].contourf(xgrid, ygrid, eGrid, cmap='jet', levels=20)
-    #         ax[1, 1].set_title(r'Energy')
-
-    #         fig.suptitle('Time %.3f' % self.timeVec[it])
-
-    #         for row in ax:
-    #             for col in row:
-    #                 col.set_aspect('equal')
-    #         plt.pause(1e-3)
-    
-
     def SaveSolution(self):
         """
         Save the full object as a pickle for later use
@@ -985,6 +903,20 @@ class ShockTube:
         print(f"If this is not correct, modify the REFERENCE_AREA setting in the geometry section of the input file to the correct value for the tube area, or modify the nozzle csv file to be consistent with the tube area.")
         
         return interpolatedNozzleArea
+    
+    def InspectPrimitives(self):
+        plt.figure()
+        plt.plot(self.xNodesVirt, self.solution['Density'])
+        plt.title('Density [kg/m3]')
+        
+        plt.figure()
+        plt.plot(self.xNodesVirt, self.solution['Velocity'])
+        plt.title('Velocity [m/s]')
+        
+        plt.figure()
+        plt.plot(self.xNodesVirt, self.solution['Density'])
+        plt.title('Pressure [Pa]')
+        
         
 
 
