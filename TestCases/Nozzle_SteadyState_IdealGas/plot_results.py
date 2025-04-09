@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import pickle
 from PyShockTube.styles import *
 
-pressureList = [45,75,90,94,97]
-pickleList = ['Results/outletPressure_%ikPa_NX_200_TMAX_0.050000.pik' %pressure for pressure in pressureList]
+pressureList = [45, 75, 90, 94, 97]
+pickleList = ['Results/outletPressure_%ikPa_NX_200/Results.pik' %pressure for pressure in pressureList]
 
 
 fig1, ax1 = plt.subplots()
@@ -17,18 +17,15 @@ for i, pickleFile in enumerate(pickleList):
     with open(pickleFile, 'rb') as file:
         solution = pickle.load(file)
     
-    if i==0:
-        solution.PlotGridGeometry(pointsToJump=3, save_filename='GridGeometry')
-    
-    xCoords = solution.xNodes
-    density = solution.solution["Density"][1:-1,-1]
-    pressure = solution.solution["Pressure"][1:-1,-1]
-    velocity = solution.solution["Velocity"][1:-1,-1]
-    mach = solution.fluid.ComputeMach_u_p_rho(velocity, pressure, density)
-    entropy = solution.fluid.ComputeEntropy_p_rho(pressure, density)
-    totalPressure = solution.fluid.ComputeTotalPressure_p_M(pressure, mach)
-    temperature = solution.fluid.ComputeTemperature_p_rho(pressure, density)
-    totalTemperature = solution.fluid.ComputeTotalTemperature_T_M(temperature, mach)
+    xCoords = solution['X Coords'][1:-1]
+    density = solution['Primitive']["Density"][1:-1,-1]
+    pressure = solution['Primitive']["Pressure"][1:-1,-1]
+    velocity = solution['Primitive']["Velocity"][1:-1,-1]
+    mach = solution['Fluid'].ComputeMach_u_p_rho(velocity, pressure, density)
+    entropy = solution['Fluid'].ComputeEntropy_p_rho(pressure, density)
+    totalPressure = solution['Fluid'].ComputeTotalPressure_p_M(pressure, mach)
+    temperature = solution['Fluid'].ComputeTemperature_p_rho(pressure, density)
+    totalTemperature = solution['Fluid'].ComputeTotalTemperature_T_M(temperature, mach)
     
     
     ax1.plot(xCoords, mach, label=r'$p_{out}=%i$ kPa' %(pressureList[i]))
@@ -51,8 +48,8 @@ for i, pickleFile in enumerate(pickleList):
         ax.legend()
         ax.grid(alpha=.3)
 
-fig1.savefig('mach.pdf', bbox_inches='tight')
-fig2.savefig('pressure.pdf', bbox_inches='tight')
+fig1.savefig('Pictures/mach.pdf', bbox_inches='tight')
+fig2.savefig('Pictures/pressure.pdf', bbox_inches='tight')
     
 plt.show()
         
