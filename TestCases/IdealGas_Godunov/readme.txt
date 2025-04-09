@@ -1,1 +1,0 @@
-Solve the 1D-Euler equations by means of the Godunov first order scheme 

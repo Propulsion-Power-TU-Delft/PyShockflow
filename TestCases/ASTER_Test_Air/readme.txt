@@ -1,1 +1,0 @@
-Example of use of simulation with a nozzle in the domain.
