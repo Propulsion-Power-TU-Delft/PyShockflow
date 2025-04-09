@@ -58,6 +58,26 @@ class FluidIdeal():
     
     def ComputeTemperature_Tt_M(self, Tt, M):
         return Tt/(1+(self.gmma-1)/2*M**2)
+    
+    def ComputeInletQuantities(self, pressure, totPressure, totTemperature, direction):
+        mach = self.ComputeMach_pt_p(totPressure, pressure)
+        temperature = self.ComputeTemperature_Tt_M(totTemperature, mach)
+        density = self.ComputeDensity_p_T(pressure, temperature)
+        soundSpeed = self.ComputeSoundSpeed_p_rho(pressure, density)
+        velocity = mach*soundSpeed*direction
+        energy = self.ComputeStaticEnergy_p_rho(pressure, density)
+        return density, velocity, energy
+
+    def Compute_gammapv_p_rho(self, p, rho):
+        if isinstance(p, np.ndarray):
+            gmma_pv = np.zeros_like(p)+self.gmma
+        else:
+            gmma_pv = self.gmma
+        return gmma_pv
+    
+    
+    
+    
 
 class FluidReal():
     """
@@ -111,6 +131,10 @@ class FluidReal():
         s = CP.PropsSI('S', 'P', p, 'D', rho, self.fluid_name)
         return s
     
+    def ComputeEntropy_p_T(self, p, T):
+        s = CP.PropsSI('S', 'P', p, 'T', T, self.fluid_name)
+        return s
+    
     def ComputeFunDerGamma_p_rho(self, p, rho):
         try: # if single phase this will work
             G = CP.PropsSI("FUNDAMENTAL_DERIVATIVE_OF_GAS_DYNAMICS", "P", p, "D", rho, self.fluid_name)
@@ -136,24 +160,33 @@ class FluidReal():
         return Z
 
     
-    def SolveRealGasInlet(self, pressure, totPressure, totTemperature):
-        """Total quantities for real gas formulation based on the MS Thesis: "Real Gas Thermodynamics" by Nederstigt, TU Delft 2017
+    def ComputeInletQuantities(self, pressure, totPressure, totTemperature, direction):
+        """The full state must be reconstructed from the quantities given in the arguments.
+        The entropy of the static and total state must be the same by definition. This is used to find the temperature.
 
         Args:
-            pressure (_type_): _description_
-            totPressure (_type_): _description_
-            totTemperature (_type_): _description_
+            pressure (float): static pressure
+            totPressure (float): total pressure
+            totTemperature (float): total temperature
         """
-        def compute_function_residual(T_guess):
-            gamma_PT = self.Compute_gammapt_p_T(pressure, T_guess)
-            residual = totTemperature/T_guess - (totPressure/pressure)**((gamma_PT-1)/(gamma_PT))
+        def compute_function_residual(temperatureGuess):
+            entropyStatic = self.ComputeEntropy_p_T(pressure, temperatureGuess)
+            entropyTotal = self.ComputeEntropy_p_T(totPressure, totTemperature)
+            residual = entropyStatic - entropyTotal
             return residual
 
         temperature = fsolve(compute_function_residual, totTemperature)[0]
-        density = CP.PropsSI("D", "P", pressure, "T", temperature, self.fluid_name)        
+        # if temperature > totTemperature or temperature < totTemperature/2:
+        #     temperature = totTemperature*0.9
+
+        
+        density = self.ComputeDensity_p_T(pressure, temperature)
         gamma_pv = self.Compute_gammapv_p_rho(pressure, density)
         mach = self.ComputeMach_pt_p_gammapv(totPressure, pressure, gamma_pv)
-        return mach, temperature, density
+        soundSpeed = self.ComputeSoundSpeed_p_rho(pressure, density)
+        velocity = direction * mach * soundSpeed
+        energy = self.ComputeStaticEnergy_p_rho(pressure, density)
+        return density, velocity, energy
     
     
     def Compute_gammapv_p_rho(self, p, rho):

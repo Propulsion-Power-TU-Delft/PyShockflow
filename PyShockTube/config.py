@@ -111,6 +111,19 @@ class Config:
         else:
             return False
     
+    
+    def getRestartFile(self):
+        try:
+            return str(self.config_parser.get('SIMULATION', 'RESTART_FILE'))
+        except:
+            return None
+    
+    def getSimulationType(self):
+        try:
+            return str(self.config_parser.get('SIMULATION', 'SIMULATION_TYPE')).lower()
+        except:
+            return "unsteady"
+    
     def getMUSCLReconstruction(self):
         try:
             res = str(self.config_parser.get('SIMULATION', 'MUSCL_RECONSTRUCTION')).lower() 
