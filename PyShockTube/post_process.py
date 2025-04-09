@@ -96,14 +96,13 @@ class PostProcess():
         velocity_limits = plot_limits(self.solution['Velocity'])
         pressure_limits = plot_limits(self.solution['Pressure'])
         
+        # compute mach number
         if isinstance(self.fluid, FluidIdeal):
             mach = self.fluid.ComputeMach_u_p_rho(self.solution['Velocity'], self.solution['Pressure'], self.solution['Density'])
         else:
             mach = np.zeros((ni, nt))
             for i in range(ni):
-                for j in range(nt):
-                    mach[i, j] = self.fluid.ComputeMach_u_p_rho(self.solution['Velocity'][i, j], self.solution['Pressure'][i, j], self.solution['Density'][i, j])
-
+                mach[i, :] = self.fluid.ComputeMach_u_p_rho(self.solution['Velocity'][i, :], self.solution['Pressure'][i, :], self.solution['Density'][i, :])
         mach_limits = plot_limits(mach)
         
         interval = jumpInstants
