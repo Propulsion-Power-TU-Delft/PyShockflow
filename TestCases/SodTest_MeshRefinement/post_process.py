@@ -6,12 +6,11 @@ from PyShockTube.shock_tube import ShockTube
 import os
 
 
-resultsFile = ["../IdealGas_Analytical/solutions/Test1.pik",
-               "Results/NoRefinement_NX_250_TMAX_0.250000.pik",
-               "Results/Refinement-04-06_NX_250_TMAX_0.250000.pik",
-               "Results/Refined_ControlExpRatio_NX_254_TMAX_0.250000.pik"]
+resultsFile = ["Results/NoRefined_NX_250/Results.pik",
+               "Results/Refined_NoControlExpRatio_NX_250/Results.pik",
+               "Results/Refined_ControlExpRatio_NX_252/Results.pik"]
 
-labels = ['Reference', 'Normal Grid', 'Refined Grid', 'Refined Grid with Adaptation']
+labels = ['No Refinement', 'Refinement', 'Refinement + Adaptation']
 
 outFolder = 'Pictures'
 os.makedirs(outFolder, exist_ok=True)
@@ -20,37 +19,27 @@ resultsPickle = []
 for i in range(len(resultsFile)):
     with open(resultsFile[i], 'rb') as file:
         resultsPickle.append(pickle.load(file))
+        
+fig, ax = plt.subplots(2, 2, figsize=(16,10))
 
-reference = resultsPickle[0]
-roeNormal = resultsPickle[1]
-roeRefined = resultsPickle[2]
-roeRefined2 = resultsPickle[3]
-
-fig, ax = plt.subplots(2, 2, figsize=(12, 8))
-
-ax[0, 0].plot(reference.x + 0.5, reference.rho[:, -1], '-C0', ms=2, label=labels[0])
-ax[0, 0].plot(roeNormal.xNodesVirt, roeNormal.solution["Density"][:, -1], '-C1', ms=2, label=labels[1])
-ax[0, 0].plot(roeRefined.xNodesVirt, roeRefined.solution["Density"][:, -1], '-C2', ms=2, label=labels[2])
-ax[0, 0].plot(roeRefined2.xNodesVirt, roeRefined2.solution["Density"][:, -1], '-C3', ms=2, label=labels[2])
+for i,results in enumerate(resultsPickle):
+    ax[0,0].plot(results['X Coords'][1:-1], results['Primitive']["Density"][1:-1, -1], label=labels[i])
 ax[0, 0].set_ylabel(r'Density')
 
-ax[0, 1].plot(reference.x + 0.5, reference.u[:, -1], '-C0', ms=2)
-ax[0, 1].plot(roeNormal.xNodesVirt, roeNormal.solution["Velocity"][:, -1], '-C1')
-ax[0, 1].plot(roeRefined.xNodesVirt, roeRefined.solution["Velocity"][:, -1], '-C2')
-ax[0, 1].plot(roeRefined2.xNodesVirt, roeRefined2.solution["Velocity"][:, -1], '-C3')
+for i,results in enumerate(resultsPickle):
+    ax[0,1].plot(results['X Coords'][1:-1], results['Primitive']["Velocity"][1:-1, -1], label=labels[i])
 ax[0, 1].set_ylabel(r'Velocity')
 
-ax[1, 0].plot(reference.x + 0.5, reference.p[:, -1], '-C0', ms=2)
-ax[1, 0].plot(roeNormal.xNodesVirt, roeNormal.solution["Pressure"][:, -1], '-C1')
-ax[1, 0].plot(roeRefined.xNodesVirt, roeRefined.solution["Pressure"][:, -1], '-C2')
-ax[1, 0].plot(roeRefined2.xNodesVirt, roeRefined2.solution["Pressure"][:, -1], '-C3')
+for i,results in enumerate(resultsPickle):
+    ax[1,0].plot(results['X Coords'][1:-1], results['Primitive']["Pressure"][1:-1, -1], label=labels[i])
 ax[1, 0].set_ylabel(r'Pressure')
 
-ax[1, 1].plot(reference.x + 0.5, reference.e[:, -1], '-C0', ms=2)
-ax[1, 1].plot(roeNormal.xNodesVirt, roeNormal.solution["Energy"][:, -1], '-C1')
-ax[1, 1].plot(roeRefined.xNodesVirt, roeRefined.solution["Energy"][:, -1], '-C2')
-ax[1, 1].plot(roeRefined2.xNodesVirt, roeRefined2.solution["Energy"][:, -1], '-C3')
-ax[1, 1].set_ylabel(r'Energy')
+
+
+for i,results in enumerate(resultsPickle):
+    results['Primitive']["Mach"] = results['Fluid'].ComputeMach_u_p_rho(results['Primitive']["Velocity"], results['Primitive']["Pressure"], results['Primitive']["Density"])
+    ax[1,1].plot(results['X Coords'][1:-1], results['Primitive']["Mach"][1:-1, -1], label=labels[i])
+ax[1, 1].set_ylabel(r'Mach')
 
 # Add legend only once for the figure
 fig.legend(labels, loc='upper center', ncol=2)
@@ -58,7 +47,7 @@ fig.legend(labels, loc='upper center', ncol=2)
 for row in ax:
         for col in row:
             col.set_xlabel('x')
-            col.grid(alpha=.2)
+            col.grid(alpha=.3)
 
 plt.savefig(outFolder + '/Comparison.pdf', bbox_inches='tight')
 
