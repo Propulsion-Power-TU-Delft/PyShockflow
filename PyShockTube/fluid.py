@@ -67,6 +67,13 @@ class FluidIdeal():
         velocity = mach*soundSpeed*direction
         energy = self.ComputeStaticEnergy_p_rho(pressure, density)
         return density, velocity, energy
+
+    def Compute_gammapv_p_rho(self, p, rho):
+        if isinstance(p, np.ndarray):
+            gmma_pv = np.zeros_like(p)+self.gmma
+        else:
+            gmma_pv = self.gmma
+        return gmma_pv
     
     
     
