@@ -110,19 +110,19 @@ class PostProcess():
             for row in ax:
                 for col in row:
                     col.cla()
-            ax[0, 0].plot(self.xNodesVirtual, self.solution['Density'][:, it], '-C0o', ms=2)
+            ax[0, 0].plot(self.xNodesVirtual[1:-1], self.solution['Density'][1:-1, it], '-C0', ms=2)
             ax[0, 0].set_ylabel(r'Density [kg/m3]')
             ax[0, 0].set_ylim(density_limits)
 
-            ax[0, 1].plot(self.xNodesVirtual, self.solution['Velocity'][:, it], '-C1o', ms=2)
+            ax[0, 1].plot(self.xNodesVirtual[1:-1], self.solution['Velocity'][1:-1, it], '-C1', ms=2)
             ax[0, 1].set_ylabel(r'Velocity [m/s]')
             ax[0, 1].set_ylim(velocity_limits)
 
-            ax[1, 0].plot(self.xNodesVirtual, self.solution['Pressure'][:, it], '-C2o', ms=2)
+            ax[1, 0].plot(self.xNodesVirtual[1:-1], self.solution['Pressure'][1:-1, it], '-C2', ms=2)
             ax[1, 0].set_ylabel(r'Pressure [Pa]')
             ax[1, 0].set_ylim(pressure_limits)
 
-            ax[1, 1].plot(self.xNodesVirtual, mach[:, it], '-C3o', ms=2)
+            ax[1, 1].plot(self.xNodesVirtual[1:-1], mach[1:-1, it], '-C3', ms=2)
             ax[1, 1].set_ylabel(r'Mach [-]')
             ax[1, 1].set_ylim(mach_limits)
 

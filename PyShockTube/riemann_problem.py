@@ -387,12 +387,12 @@ class RiemannProblem:
 
         # contact wave
         alpha = np.arctan2(1 , self.uStar)
-        plt.plot(x0 + np.cos(alpha) * p, t0 + np.sin(alpha) * p, '--k', label='contact wave')
+        plt.plot(x0 + np.cos(alpha) * p, t0 + np.sin(alpha) * p, '--k', label='Contact wave')
 
         # left wave
         if self.left_wave == 'shock':
             alpha = np.arctan2(1, self.Sl)
-            plt.plot(x0+np.cos(alpha)*p, t0+np.sin(alpha)*p, 'C0', label='shock')
+            plt.plot(x0+np.cos(alpha)*p, t0+np.sin(alpha)*p, 'C0', label='Shock')
         else:
             alpha1 = np.arctan2(1, self.Shl)
             alpha2 = np.arctan2(1, self.Stl)
@@ -400,7 +400,7 @@ class RiemannProblem:
             for alpha in alphas:
                 xt, yt = x0 + np.cos(alpha) * p, t0 + np.sin(alpha) * p
                 if alpha==alphas[0]:
-                    plt.plot(xt, yt, 'C0', label='rarefaction')
+                    plt.plot(xt, yt, 'C0', label='Rarefaction')
                 elif alpha==alphas[-1]:
                     plt.plot(xt, yt, 'C0')
                 else:
@@ -409,7 +409,7 @@ class RiemannProblem:
         # right wave
         if self.right_wave == 'shock':
             alpha = np.arctan2(1, self.Sr)
-            plt.plot(x0 + np.cos(alpha) * p, t0 + np.sin(alpha) * p, 'C1', label='shock')
+            plt.plot(x0 + np.cos(alpha) * p, t0 + np.sin(alpha) * p, 'C1', label='Shock')
         else:
             alpha1 = np.arctan2(1, self.Shr)
             alpha2 = np.arctan2(1, self.Str)
@@ -417,7 +417,7 @@ class RiemannProblem:
             for alpha in alphas:
                 xt, yt = x0 + np.cos(alpha) * p, t0 + np.sin(alpha) * p
                 if alpha == alphas[0]:
-                    plt.plot(xt, yt, 'C1', label='rarefaction')
+                    plt.plot(xt, yt, 'C1', label='Rarefaction')
                 elif alpha == alphas[-1]:
                     plt.plot(xt, yt, 'C1')
                 else:
@@ -425,10 +425,10 @@ class RiemannProblem:
 
         # plt.gca().set_aspect('equal', adjustable='box')
         plt.legend()
-        plt.xlabel(r'$x$')
-        plt.ylabel(r'$t$')
-        # plt.xlim([-0.5, 0.5])
-        # plt.ylim([0, 1])
+        plt.xlabel(r'$x \ \rm{[m]}$')
+        plt.ylabel(r'$t \ \rm{[s]}$')
+        # plt.xticks([])
+        # plt.yticks([])
         plt.grid(alpha=0.3)
         if file_name is not None and folder_name is not None:
             os.makedirs(folder_name, exist_ok=True)
