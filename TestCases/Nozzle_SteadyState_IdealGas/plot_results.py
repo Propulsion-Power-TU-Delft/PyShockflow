@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
-from PyShockTube.styles import *
+from PyShockflow.styles import *
 from scipy.optimize import fsolve
 
 pressureList = [45, 75, 90, 94, 97]

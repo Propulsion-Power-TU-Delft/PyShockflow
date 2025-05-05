@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
-from PyShockTube.riemann_problem import RiemannProblem
-from PyShockTube.shock_tube import ShockTube
+from PyShockflow.riemann_problem import RiemannProblem
+from PyShockflow.shock_tube import ShockTube
 import os
 
 solFile = "solutions/WV1_NX_250_TMAX_0.000764.pik"

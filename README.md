@@ -1,10 +1,10 @@
-# PyShockTube #
+# PyShockflow #
 
 
 
 ### What is this repository for? ###
 
-* Resolution of shock tube problems for ideal and real gases.
+* Resolution of quasi-1D flow problems for ideal and real gases.
 * Learning of numerical flux details, effects and implementation.
 * Implementation and testing of new numerical schemes to solve the 1D Euler Equations.
 * Study of non-classical gas dynamics effects.

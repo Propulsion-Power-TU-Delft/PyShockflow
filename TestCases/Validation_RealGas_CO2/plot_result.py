@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
-from PyShockTube.riemann_problem import RiemannProblem
-from PyShockTube.shock_tube import ShockTube
-from PyShockTube.styles import *
+from PyShockflow.riemann_problem import RiemannProblem
+from PyShockflow.shock_tube import ShockTube
+from PyShockflow.styles import *
 import os
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import os
 import pickle
 import shutil
-from PyShockTube.fluid import FluidIdeal, FluidReal
+from PyShockflow.fluid import FluidIdeal, FluidReal
 
 class PostProcess():
     def __init__(self, filepath):

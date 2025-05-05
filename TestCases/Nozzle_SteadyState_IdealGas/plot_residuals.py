@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from PyShockTube.styles import *
+from PyShockflow.styles import *
 
 residualsRho = []
 residualsRhoU = []

@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import os
 import pickle
 from numpy import sqrt
-from PyShockTube.fluid import FluidIdeal
-from PyShockTube.euler_functions import *
+from PyShockflow.fluid import FluidIdeal
+from PyShockflow.euler_functions import *
 
 
 class RoeScheme_Base:

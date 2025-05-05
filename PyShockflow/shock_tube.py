@@ -5,12 +5,12 @@ import pickle
 import csv
 import sys
 import copy
-from PyShockTube.riemann_problem import RiemannProblem
-from PyShockTube.roe_scheme import RoeScheme_Base, RoeScheme_Generalized
-from PyShockTube.muscl_hancock import MusclHancock
-from PyShockTube.fluid import FluidIdeal, FluidReal
-from PyShockTube.post_process import PostProcess
-from PyShockTube.euler_functions import *
+from PyShockflow.riemann_problem import RiemannProblem
+from PyShockflow.roe_scheme import RoeScheme_Base, RoeScheme_Generalized
+from PyShockflow.muscl_hancock import MusclHancock
+from PyShockflow.fluid import FluidIdeal, FluidReal
+from PyShockflow.post_process import PostProcess
+from PyShockflow.euler_functions import *
 
 
 
