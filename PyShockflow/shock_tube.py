@@ -495,6 +495,9 @@ class ShockTube:
         # short aliases
         primitiveOld = self.solution.copy()
         
+        # write the initial time to a solution file
+        self.WriteSolution(it=0, time=0)
+        
         time = 0
         iTime = 1
         
