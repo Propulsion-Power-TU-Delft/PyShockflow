@@ -14,9 +14,9 @@
 
 * Git clone the present folder in your system
 
-* Clone the conda environment from the provided yaml file:
+* Create a new python environment:
 ```bash
-conda env create -f environment.yml
+conda create -n pyshockflow python=3.12
 ```
 
 * Activate the new environment:
