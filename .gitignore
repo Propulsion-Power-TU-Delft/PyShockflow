@@ -99,6 +99,7 @@ Thumbs.db
 *pickle*
 *pickle
 *.pik
+*.pkl
 *.su2
 *.cfg
 *.pvsm

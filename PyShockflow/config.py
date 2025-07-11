@@ -92,11 +92,11 @@ class Config:
     def getNumericalScheme(self):
         return str(self.config_parser.get('SIMULATION', 'NUMERICAL_SCHEME')).lower() 
     
-    # def getTimeStepMethod(self):
-    #     try:
-    #         return str(self.config_parser.get('SIMULATION', 'TIME_STEP_METHOD')).lower()
-    #     except:
-    #         return 'constant'
+    def getFluxLimiter(self):
+        try:
+            return str(self.config_parser.get('SIMULATION', 'FLUX_LIMITER')).lower() 
+        except:
+            return 'van albada'
     
     def getOutputFolder(self):
         return str(self.config_parser.get('OUTPUT', 'FOLDER_NAME')) 

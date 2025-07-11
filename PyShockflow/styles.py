@@ -61,11 +61,11 @@ total_chars_mid = total_chars//2
 # Set font size for different elements
 
 # latex preamble
-# font_family = 'serif'
-# font_name = 'Computer Modern'
-# plt.rc('text', usetex=True)
-# plt.rc('font', family=font_family)
-# plt.rc('font', serif=font_name)
+font_family = 'serif'
+font_name = 'Computer Modern'
+plt.rc('text', usetex=True)
+plt.rc('font', family=font_family)
+plt.rc('font', serif=font_name)
 
 
 plt.rc('font', size=font_text)            # controls default text sizes
