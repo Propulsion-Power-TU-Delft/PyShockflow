@@ -425,8 +425,8 @@ class RiemannProblem:
 
         # plt.gca().set_aspect('equal', adjustable='box')
         plt.legend()
-        plt.xlabel(r'$x \ \rm{[m]}$')
-        plt.ylabel(r'$t \ \rm{[s]}$')
+        plt.xlabel(r'$x \ \rm{[-]}$')
+        plt.ylabel(r'$t \ \rm{[-]}$')
         # plt.xticks([])
         # plt.yticks([])
         plt.grid(alpha=0.3)

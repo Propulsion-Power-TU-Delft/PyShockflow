@@ -59,6 +59,9 @@ class FluidIdeal():
     def ComputeTemperature_Tt_M(self, Tt, M):
         return Tt/(1+(self.gmma-1)/2*M**2)
     
+    def ComputePressure_Pt_M(self, Pt, M):
+        return Pt/((1+(self.gmma-1)/2*M**2)**(self.gmma/(self.gmma-1)))
+    
     def ComputeInletQuantities(self, pressure, totPressure, totTemperature, direction):
         mach = self.ComputeMach_pt_p(totPressure, pressure)
         temperature = self.ComputeTemperature_Tt_M(totTemperature, mach)
