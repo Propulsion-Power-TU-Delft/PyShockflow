@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 import os
-from PyShockflow.riemann_problem import RiemannProblem
-from PyShockflow.styles import *
+from PyShockTube.riemann_problem import RiemannProblem
+from PyShockTube.styles import *
 
 markers = ['-o', '-s', '-D', '-^', '-v']
 pointInterval = 2
