@@ -543,14 +543,19 @@ class ShockTube:
     
     
     def ComputeResiduals(self, primitives, dt):
-        limiter='Van Albada' # only this at the moment
+        availableLimiters = ['van albada', 'van leer', 'min-mod', 'superbee', 'none']
+        
+        limiter = self.config.getFluxLimiter()
+        if limiter not in availableLimiters:
+            raise ValueError(f'Limiter not recognized! Available ones are: {availableLimiters}')
+        
         flux_method = self.config.getNumericalScheme()
-        high_order = self.config.getMUSCLReconstruction()
+        MUSCL = self.config.getMUSCLReconstruction()
         
         # compute advection fluxes on every internal interface
         flux = np.zeros((self.nNodes+1, 3))
         for iFace in range(flux.shape[0]):
-            flux[iFace, :] = self.ComputeFluxVector(iFace, iFace+1, primitives, dt, flux_method, high_order, limiter)
+            flux[iFace, :] = self.ComputeFluxVector(iFace, iFace+1, primitives, dt, flux_method, MUSCL, limiter)
         
         # compute the source terms
         if self.topology.lower()=='nozzle':
@@ -664,15 +669,14 @@ class ShockTube:
         return cfl
         
 
-    def ComputeFluxVector(self, il, ir, primitive, dt, flux_method, high_order, limiter):
+    def ComputeFluxVector(self, il, ir, primitive, dt, flux_method, MUSCL, limiter):
         """
         Compute the flux vector at the interface between grid points `il` and `ir`, using a certain `flux_method`.
         """
         
         # flow reconstruction if high_order=True
-        if (high_order and il>2 and ir<self.nNodesHalo-2):
-            rhoL, uL, pL, rhoR, uR, pR = self.MUSCL_VanAlbada_Reconstruction(il, ir)  # currently working
-            # rhoL, uL, pL, rhoR, uR, pR = self.MUSCL_Reconstruction(il, ir, it, limiter)  # at the moment creates oscillations with every limiter for some reasons
+        if (MUSCL and il>2 and ir<self.nNodesHalo-3):
+            rhoL, uL, pL, rhoR, uR, pR = self.MUSCL_Reconstruction(il, ir, limiter)
         else:
             rhoL = primitive['Density'][il]
             rhoR = primitive['Density'][ir]
@@ -752,40 +756,44 @@ class ShockTube:
             raise ValueError('Unknown flux method')
         
         return flux
-
-
-    def MUSCL_VanAlbada_Reconstruction(self, il, ir):
+    
+    def MUSCL_Reconstruction(self, il, ir, limiter):
         """
-        MUSCL approach with Van Albada limiter. Formulation taken from pag. 110 of "Computational Fluid Dynamics book, by Blazek", where kappa=0,
-        and the reconstruction with limiter is embedded in a single formula
+        MUSCL reconstruction coupled with a certain limiter
         """
         # states left, left minus 1, right, right plus one
-        U_l = np.array([self.solution['Density'][il], self.solution['Velocity'][il], self.solution['Pressure'][il]])
         U_lm = np.array([self.solution['Density'][il-1], self.solution['Velocity'][il-1], self.solution['Pressure'][il-1]])
+        U_l = np.array([self.solution['Density'][il], self.solution['Velocity'][il], self.solution['Pressure'][il]])
         U_r = np.array([self.solution['Density'][ir], self.solution['Velocity'][ir], self.solution['Pressure'][ir]])
         U_rp = np.array([self.solution['Density'][ir+1], self.solution['Velocity'][ir+1], self.solution['Pressure'][ir+1]])
-
-        # unlimited jumps
-        aR = U_rp-U_r
-        bR = U_r-U_l
-        aL = U_r-U_l
-        bL = U_l-U_lm
-
-        def func(a, b, eps=1e-6):
-            y = (a*(b**2+eps)+b*(a**2+eps)) / (a**2 + b**2 +2*eps) 
-            return y
         
-        # limited slopes
-        deltaR = func(aR, bR)
-        deltaL = func(aL, bL)
-
+        dx_left_leftm = self.xNodes[il]-self.xNodes[il-1] # dx is always the same for now
+        dx_right_left = self.xNodes[ir]-self.xNodes[il]
+        dx_rightp_right = self.xNodes[ir+1]-self.xNodes[ir]
+        
+        # compute the smoothness indicators
+        smoothnessLeft = self.ComputeSmoothnessIndicators(U_lm, U_l, U_r, dx_left_leftm, dx_right_left)
+        smoothnessRight = self.ComputeSmoothnessIndicators(U_l, U_r, U_rp, dx_right_left, dx_rightp_right)
+        
+        # compute left and right flux limiters
+        psi_left = self.Compute_Limiter(smoothnessLeft, limiter)
+        psi_right = self.Compute_Limiter(smoothnessRight, limiter)
+        
         # reconstruct left and right states
-        U_l_rec = U_l+0.5*deltaL
-        U_r_rec = U_r-0.5*deltaR
+        U_l_rec = U_l+0.5*psi_left*(U_r-U_l)
+        U_r_rec = U_r-0.5*psi_right*(U_rp-U_r)
 
         return U_l_rec[0], U_l_rec[1], U_l_rec[2], U_r_rec[0], U_r_rec[1], U_r_rec[2]
 
 
+    def ComputeSmoothnessIndicators(self, U_left, U_central, U_right, dx_left, dx_right):
+        """
+        Compute the array of smoothness indicators for the following flux limiter evaluation
+        """
+        rVector = ((U_central-U_left)/dx_left) / ((U_right-U_central)/dx_right + 1e-6)
+        return rVector
+    
+    
     def SaveSolution(self):
         """
         Save the full object as a pickle for later use
@@ -820,51 +828,10 @@ class ShockTube:
 
         print(f"Fluid flow quantities (P,T,D,s,Gamma,Z) saved to {file_path}!")
 
-    def MUSCL_Reconstruction(self, il, ir, it, limiter):
-        """
-        MUSCL reconstruction with limiter. Currently not working, since it creates oscillations with every limiter
-        """
-
-        # states left, left minus 1, right, right plus one
-        U_l = np.array([self.solution['Density'][il, it], self.solution['Velocity'][il, it], self.solution['Pressure'][il, it]])
-        U_lm = np.array([self.solution['Density'][il-1, it], self.solution['Velocity'][il-1, it], self.solution['Pressure'][il-1, it]])
-        U_r = np.array([self.solution['Density'][ir, it], self.solution['Velocity'][ir, it], self.solution['Pressure'][ir, it]])
-        U_rp = np.array([self.solution['Density'][ir+1, it], self.solution['Velocity'][ir+1, it], self.solution['Pressure'][ir+1, it]])
-        
-        def compute_jump_ratio(num, den):
-            r = np.zeros_like(num)
-            for i in range(len(num)):
-                if np.abs(num[i])<=1e-8:
-                    num[i] = 0.
-                    den[i] = 1.
-                elif (num[i]>=1e-8 and np.abs(den[i])<1e-8):
-                    num[i] = 1.
-                    den[i] = 1.
-                elif (num[i]<-1e-8 and np.abs(den[i])<1e-8):
-                    num[i] = -1.
-                    den[i] = 1.
-            return num/den
-        
-        num = (U_r-U_l)
-        den = (U_l-U_lm)
-        r_l = compute_jump_ratio(num, den)
-
-        num = (U_rp-U_r)
-        den = (U_r-U_l)
-        r_r = compute_jump_ratio(num, den)
-
-        Phi_l = self.Compute_Limiter(r_l, limiter)
-        Phi_r = self.Compute_Limiter(r_r, limiter)
-
-        U_l_rec = U_l + 0.5*Phi_l*(U_r-U_l)
-        U_r_rec = U_r - 0.5*Phi_r*(U_r-U_l)
-
-        return U_l_rec[0], U_l_rec[1], U_l_rec[2], U_r_rec[0], U_r_rec[1], U_r_rec[2]
-
 
     def Compute_Limiter(self, r_vec, limiter):
         """
-        Compute the limiter values. Currently not working.
+        Compute the flux limiter functions.
         """
         psi = np.zeros(3)
         for i in range(len(r_vec)):
@@ -876,17 +843,17 @@ class ShockTube:
             elif limiter.lower() == 'van leer':
                 psi[i] = (r+np.abs(r))/(1+np.abs(r))
 
-            elif limiter.lower() == 'min mod':
+            elif limiter.lower() == 'min-mod':
                 psi[i] = np.maximum(0, np.minimum(1, r))
 
             elif limiter.lower() == 'superbee':
-                psi[i] = np.maximum(0, np.minimum(2*r, 1), np.minimum(r, 2))
+                psi[i] = np.max(np.array([0, np.minimum(2 * r, 1), np.minimum(r, 2)]))
 
             elif limiter.lower() == 'none':
                 psi[i] = 1 
             else:
                 raise ValueError('Limiter not recognized!')
-        
+            
         return psi
     
     def readNozzleFile(self, xTube, filepath):
