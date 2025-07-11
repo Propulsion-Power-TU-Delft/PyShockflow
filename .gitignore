@@ -95,7 +95,6 @@ Thumbs.db
 *.mov
 *.wmv
 *.pdf
-*.csv
 *pickle*
 *pickle
 *.pik
