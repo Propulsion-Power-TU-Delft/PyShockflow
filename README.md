@@ -5,37 +5,37 @@
 ### What is this repository for? ###
 
 * Resolution of quasi-1D flow problems for ideal and real gases.
-* Learning of numerical flux details, effects and implementation.
+* Learning of numerical flux schemes, effects and implementation.
 * Implementation and testing of new numerical schemes to solve the 1D Euler Equations.
-* Study of non-classical gas dynamics effects.
+* Study of non-ideal and non-classical gas dynamics effects.
 
 
 ### How do I get set up? ###
 
 * Git clone the present folder in your system
 
-* Create a new environment called pyshock with Conda (or venv), with the following python version:
+* Clone the conda environment from the provided yaml file:
 ```bash
-conda create --name pyshock python=3.12.2
+conda env create -f environment.yml
 ```
 
 * Activate the new environment:
 ```bash
-conda activate pyshock
+conda activate pyshockflow
 ```
 
-* Navigate to the package and and install it:
+* Navigate to the package and and install it on your machine:
 ```bash
-cd pyshocktube
-pip install .
+cd pyshockflow
+pip install . -e
 ```
 
-* Navigate to the test cases folder (or create one), and run the main.py file checking that points to the correct input file:
+* Navigate to the test cases folder (or create one), and run the main.py file:
 ```bash
 python main.py
 ```
 
-* The input parameters are specified inside every `intput.ini` file, and should be quite easy to comprehend and modify. The content of input files
+* The input parameters are specified inside every `input.ini` file, and should be quite easy to comprehend and modify. The content of input files
 can be taken from the testcases folder, or alternatively checking the Config.py class.
 
 
@@ -44,10 +44,7 @@ can be taken from the testcases folder, or alternatively checking the Config.py 
 * The code has been written for Mac OS systems, so there is the chance for some path-related commands to not run correctly
 on windows based machines. It should be quite easy to fix. With time the code will be made more universal.
 
-* The system of Euler equations is solved with the forward Euler explicit method (first-order in time). This means that the time-step must be accurately restricted below certain limits (case by case dependent), and a large number of iterations may be required to simulate a certain problem. The first thing to do when a simulation fails, is to try reducing the `CFL_MAX` input parameter. 
-
-* The TOPOLOGY_MODE = nozzle solves the quasi-1D Euler equations with source terms related to nozzle modeling. The nozzle description
-needs to be added as input in a csv file containing axial locations on the first column and area magnitude in the second.
+* The technical details can be found in the related article ...
 
 
 ### Results Example ###
@@ -57,15 +54,6 @@ Test case for ideal gas (air), documented in [1].
 The following picture reports the comparison between the reference data obtained with the analytical Riemann Solver, and the simulation results obtained with the Godunov scheme for ideal gas:
 ![Description of image](images/godunov_idealgas.png)
 
-##### Roe Scheme for ideal gas (air) with High-Order Reconstruction #####
-Test case for ideal gas (air) documented in [1], solved with Roe's scheme and MUSCL reconstruction + Van Albada limiter described in [3].
-The following picture reports the comparison between the solutions with and without high-order reconstruction.
-![Description of image](images/high_order_comparison.png)
-
-Given the sensitivity of high-order reconstruction to the simulation time-step, the following picture reports the comparison between results obtained with different CFL numbers:
-![Description of image](images/high_order.png)
-Zooming in, the critical areas show the time-step effects:
-![Description of image](images/high_order_zoom.png)
 
 ##### CO2 with real gas effects #####
 Test case for real gas effects documented in [4]. The generalised Roe's scheme formulation has been taken from [2].
