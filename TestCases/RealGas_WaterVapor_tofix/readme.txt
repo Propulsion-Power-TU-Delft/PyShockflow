@@ -1,2 +1,0 @@
-Test-case detailed in "L. D. Landau and E. M. Lifshitz, Course of Theoretical Physics, Fluid Mechanics (Pergamon, Oxford, 1959), Vol. 6.", 
-and described by "Roe Linearization for the van der Waals Gas, Guardone et al."
