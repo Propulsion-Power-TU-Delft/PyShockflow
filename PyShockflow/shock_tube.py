@@ -6,7 +6,7 @@ import csv
 import sys
 import copy
 from PyShockflow.riemann_problem import RiemannProblem
-from PyShockflow.roe_scheme import RoeScheme_Base, RoeScheme_Generalized
+from PyShockflow.roe_scheme import RoeScheme_Base, RoeScheme_Generalized_Arabi, RoeScheme_Generalized_Vinokur
 from PyShockflow.muscl_hancock import MusclHancock
 from PyShockflow.fluid import FluidIdeal, FluidReal
 from PyShockflow.post_process import PostProcess
@@ -701,7 +701,6 @@ class ShockTube:
             u1, u2, u3 = GetConservativesFromPrimitives(rho, u, p, self.fluid)
             u1AVG, u2AVG, u3AVG = np.sum(u1)/len(u1), np.sum(u2)/len(u2), np.sum(u3)/len(u3)
             flux = EulerFluxFromConservatives(u1AVG, u2AVG, u3AVG, self.fluid) 
-        
         elif flux_method.lower=='waf':
             if self.fluid_model!='ideal':
                 raise ValueError('WAF scheme is available only for ideal gas model')
@@ -717,24 +716,31 @@ class ShockTube:
             u1, u2, u3 = GetConservativesFromPrimitives(rho, u, p, self.fluid)
             u1AVG, u2AVG, u3AVG = np.sum(u1)/len(u1), np.sum(u2)/len(u2), np.sum(u3)/len(u3)
             flux = EulerFluxFromConservatives(u1AVG, u2AVG, u3AVG, self.fluid)
-        
         elif flux_method.lower()=='roe':
-            if self.fluid_model=='ideal':
+            if self.fluid_model=='real':
+                raise ValueError('Basic Roe scheme is not available for real gas model. Select Roe_Arabi or Roe_Vinokur, depending on the Roe Avg procedure that you want.')
+            else:
                 roe = RoeScheme_Base(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
                 roe.ComputeAveragedVariables()
                 roe.ComputeAveragedEigenvalues()
-                roe.ComputeAveragedEigenvectors()
                 roe.ComputeWaveStrengths()
                 flux = roe.ComputeFlux()
-            elif self.fluid_model=='real':
-                roe = RoeScheme_Generalized(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
+        elif flux_method.lower()=='roe_arabi':
+            if self.fluid_model=='ideal':
+                raise ValueError('Roe_Arabi scheme is not available for ideal gas model. Select Standard Roe scheme.')
+            else:
+                roe = RoeScheme_Generalized_Arabi(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
                 roe.ComputeAveragedVariables()
                 roe.ComputeAveragedEigenvalues()
                 roe.ComputeWaveStrengths()
                 flux = roe.ComputeFlux()
+        elif flux_method.lower()=='roe_vinokur':
+            if self.fluid_model=='ideal':
+                raise ValueError('Roe_Vinokur scheme is not available for ideal gas model. Select Standard Roe scheme.')
             else:
-                raise ValueError('Unknown fluid model. Select ideal or real')
-        
+                roe = RoeScheme_Generalized_Vinokur(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
+                roe.ComputeAveragedVariables()
+                flux = roe.ComputeFlux()
         elif flux_method.lower()=='muscl-hancock':
             if self.fluid_model!='ideal':
                 raise ValueError('MUSCL-Hancock scheme is available only for ideal gas model')
@@ -751,7 +757,6 @@ class ShockTube:
             mhck.ReconstructInterfaceValues()
             mhck.EvolveInterfaceValues(self.dx, dt)
             flux = mhck.ComputeRoeFlux()
-        
         else:
             raise ValueError('Unknown flux method')
         

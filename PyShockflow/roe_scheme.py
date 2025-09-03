@@ -145,7 +145,7 @@ class RoeScheme_Base:
 
 
 
-class RoeScheme_Generalized(RoeScheme_Base):
+class RoeScheme_Generalized_Arabi(RoeScheme_Base):
     """
     Generalised Roe Scheme for real gases, taken from the article 'A simple extension of Roe scheme for real gases', Arabi et al. 
     Journal of Computational Physics 2017. Formulation based on 1D problem.
@@ -238,6 +238,97 @@ class RoeScheme_Generalized(RoeScheme_Base):
         
         self.deltaF[2] = (self.hAVG+self.uAVG*self.aAVG)*absEig[0]*(self.alphas[0]) + \
                          (self.hAVG-self.uAVG*self.aAVG)*absEig[1]*(self.alphas[1]) + X
+
+
+class RoeScheme_Generalized_Vinokur(RoeScheme_Base):
+    """
+    Generalised Roe Scheme for real gases, 
+    where the Roe avg state is taken from the article 'Generalized flux-vector splitting and Roe average for an equilibrium real gas', Vinokur and Montagnè 
+    Journal of Computational Physics 1990. Formulation based on 1D problem.
+    """
+    def __init__(self, rhoL, rhoR, uL, uR, pL, pR, fluid):
+        super().__init__(rhoL, rhoR, uL, uR, pL, pR, fluid)
+        self.deltaP = (self.pR-self.pL)
+        self.deltaU = (self.uR - self.uL)
+        self.deltaRho = (self.rhoR - self.rhoL)
+    
+    def ComputeAveragedVariables(self):
+        """
+        Compute the Roe averaged state following approach of Vinokur
+        """
+        alpha = np.sqrt(self.rhoL) / (np.sqrt(self.rhoL)+np.sqrt(self.rhoR))
+        self.uAVG = alpha*self.uL + (1-alpha)*self.uR
+        self.htAVG = alpha*self.htL + (1-alpha)*self.htR
+        self.hL = self.htL - 0.5*self.uL**2
+        self.hR = self.htR - 0.5*self.uR**2
+        self.hAVG = alpha*self.hL + (1-alpha)*self.hR + 0.5*alpha*(1.0-alpha)*self.deltaU**2
+        
+        # compute mean initial guess state
+        p_mean = 0.5*(self.pL+self.pR)
+        eL = self.fluid.ComputeStaticEnergy_p_rho(self.pL, self.rhoL)
+        eR = self.fluid.ComputeStaticEnergy_p_rho(self.pR, self.rhoR)
+        e_mean = 0.5*(eL+eR)
+        
+        chiL, kappaL = self.fluid.ComputeChiKappa_VinokurScheme_p_rho(self.pL, self.rhoL)
+        chiR, kappaR = self.fluid.ComputeChiKappa_VinokurScheme_p_rho(self.pR, self.rhoR)
+        chiHat = (chiL + chiR) / 2.0
+        kappaHat = (kappaL + kappaR) / 2.0
+        
+        eL = self.fluid.ComputeStaticEnergy_p_rho(self.pL, self.rhoL)
+        eR = self.fluid.ComputeStaticEnergy_p_rho(self.pR, self.rhoR)
+        delta_rhoe = (self.rhoR*eR - self.rhoL*eL)
+        
+        # projection procedure to compute the average state starting fro the initial guess (hat values)
+        error_term = self.deltaP - chiHat*self.deltaRho - kappaHat*delta_rhoe
+        kappah_hat = 0.5 * (kappaL*self.hL + kappaR*self.hR)
+        sHat = chiHat + kappah_hat
+        self.cAVG = np.sqrt(sHat)
+        D_term = (sHat*self.deltaRho)**2 + (self.deltaP)**2
+        
+        if self.deltaRho==0:
+            self.chiAVG = chiHat
+        else:
+            self.chiAVG = (D_term * chiHat + sHat**2 * self.deltaRho * error_term) / (D_term - self.deltaP*error_term)
+        
+        if self.deltaP==0:
+            self.kappaAVG = kappaHat
+        else:
+            self.kappaAVG = (D_term * kappaHat) / (D_term - self.deltaP*error_term)
+        
+        self.aAVG = np.sqrt(self.chiAVG + self.kappaAVG*self.hAVG)
+    
+    def ComputeFlux(self, entropy_fix=True):
+        """
+        Assemble the global flux, average + dissipation
+        """
+        fluxL = self.EulerFlux(self.u1L, self.u2L, self.u3L)
+        fluxR = self.EulerFlux(self.u1R, self.u2R, self.u3R)
+
+        # compute the Eigenvectors matrices
+        k1 = 0.5*self.kappaAVG*self.uAVG**2 + self.kappaAVG
+        k2 = 0.5*self.uAVG**2 - self.chiAVG/self.kappaAVG
+        matrixR = np.array([[1, 1, 1],
+                            [self.uAVG, self.uAVG+self.aAVG, self.uAVG-self.aAVG],
+                            [k2, self.htAVG + self.aAVG*self.uAVG, self.htAVG - self.aAVG*self.uAVG]])
+        
+        matrixRinv = np.array([[1-k1/self.aAVG**2, self.kappaAVG*self.uAVG/self.aAVG**2, -self.kappaAVG/self.aAVG**2],
+                               [0.5*(k1/self.aAVG**2-self.uAVG/self.aAVG), -0.5*(self.kappaAVG*self.uAVG/self.aAVG**2-1/self.aAVG), 0.5*self.kappaAVG/self.aAVG**2],
+                               [0.5*(k1/self.aAVG**2+self.uAVG/self.aAVG), -0.5*(self.kappaAVG*self.uAVG/self.aAVG**2+1/self.aAVG), 0.5*self.kappaAVG/self.aAVG**2]])
+        
+        matrixLambda = np.array([[self.uAVG, 0, 0],
+                                 [0, self.uAVG+self.aAVG, 0],
+                                 [0, 0, self.uAVG-self.aAVG]])
+        matrixLambda = np.abs(matrixLambda)
+        
+        deltaFlux = matrixR @ matrixLambda @ matrixRinv @ (fluxR.reshape(3,1) - fluxL.reshape(3,1))
+        fluxRoe = 0.5*(fluxL+fluxR) - 0.5*deltaFlux.flatten()
+        return fluxRoe
+        
+
+        
+        
+        
+        
 
 
 
