@@ -145,6 +145,16 @@ class Config:
         except:
             return False # false by default
     
+    def isEntropyFixActive(self):
+        try:
+            res = str(self.config_parser.get('SIMULATION', 'ENTROPY_FIX_ACTIVE')).lower() 
+            if res=='yes' or res=='true':
+                return True
+            else:
+                return False
+        except:
+            return True # true by default
+    
     def adaptMeshRefinementExtremities(self):
         try:
             res = str(self.config_parser.get('SIMULATION', 'ADAPT_MESH_REFINEMENT')).lower() 

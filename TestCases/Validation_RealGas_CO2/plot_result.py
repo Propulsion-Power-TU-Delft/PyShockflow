@@ -8,9 +8,10 @@ import os
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 
 
-solFile_1 = "Results/co2_1stOrder_ideal_NX_1500/Results.pik"
-solFile_2 = "Results/co2_1stOrder_real_NX_1500/Results.pik"
-solFile_3 = "Results/co2_2ndOrder_real_NX_250/Results.pik"
+solFile_1 = "Results/ideal_standard_NX_500/Results.pik"
+solFile_2 = "Results/ideal_vinokur_NX_500/Results.pik"
+solFile_3 = "Results/real_arabi_NX_500/Results.pik"
+solFile_4 = "Results/real_vinokur_NX_500/Results.pik"
 
 outFolder = 'Pictures'
 os.makedirs(outFolder, exist_ok=True)
@@ -26,9 +27,11 @@ with open(solFile_2, 'rb') as file:
     sol2 = pickle.load(file)
 with open(solFile_3, 'rb') as file:
     sol3 = pickle.load(file)
+with open(solFile_4, 'rb') as file:
+    sol4 = pickle.load(file)
 
-sols = [sol1, sol2]
-labels = ['Ideal Gas', 'Real Gas', 'Real Roe + MUSCL']
+sols = [sol1, sol2, sol3, sol4]
+labels = ['Ideal Roe Standard', 'Ideal Roe Vinokur', 'Real Roe Arabi', 'Real Roe Vinokur']
 
 fig, ax = plt.subplots(1, 3, figsize=(16, 4))
 
@@ -58,7 +61,7 @@ inset3.plot(uRef[:,0], uRef[:,1], 'ko', mfc='none', ms=3)
 for i, res in enumerate(sols):
     inset3.plot(res['X Coords'][1:-1], res['Primitive']['Velocity'][1:-1, -1])
 inset3.set_xlim(5.7, 8.8)
-inset3.set_ylim(810, 960)
+inset3.set_ylim(880, 960)
 inset3.tick_params(labelsize=8)
 mark_inset(ax[1], inset3, loc1=2, loc2=4, fc="none", ec="0.5")
 
@@ -92,7 +95,7 @@ for inset in [inset1, inset2, inset3]:
 for row in ax:
     row.set_xlabel(r'$x \ \rm{[m]}$')
     row.grid(alpha=.3)
-fig.legend(loc='upper center', bbox_to_anchor=(0.5, 1.1), ncol=4)
+fig.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=5)
 
 plt.savefig(outFolder + '/co2.pdf', bbox_inches='tight')
 
