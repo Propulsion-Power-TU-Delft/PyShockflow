@@ -268,17 +268,18 @@ class RoeScheme_Generalized_Vinokur(RoeScheme_Base):
         chiL, kappaL = self.fluid.ComputeChiKappa_VinokurScheme_p_rho(self.pL, self.rhoL)
         chiR, kappaR = self.fluid.ComputeChiKappa_VinokurScheme_p_rho(self.pR, self.rhoR)
         chiM, kappaM = self.fluid.ComputeChiKappa_VinokurScheme_p_rho(p_mean, rho_mean)
-        chiHat = (chiL + chiR) / 2.0
-        kappaHat = (kappaL + kappaR) / 2.0
+        chiHat = (chiL + chiR + 4.0*chiM) / 6.0
+        kappaHat = (kappaL + kappaR + 4.0*kappaM) / 6.0
         delta_rhoe = (rhoeR - rhoeL)
         
         # projection procedure to compute the average state starting fro the initial guess (hat values)
         error_term = self.deltaP - chiHat*self.deltaRho - kappaHat*delta_rhoe
         hM = 0.5*(self.hL+self.hR)
-        kappah_hat = (kappaL*self.hL + kappaR*self.hR) / 2.0
+        kappah_hat = (kappaL*self.hL + kappaR*self.hR + 4.0*kappaM*hM) / 6.0
         csquare_L = chiL + kappaL*self.hL
         csquare_R = chiR + kappaR*self.hR
-        sHat = (csquare_L + csquare_R) / 2.0
+        csquare_M = chiM + kappaM*hM
+        sHat = (csquare_L + csquare_R + 4.0*csquare_M) / 6.0
         D_term = (sHat*self.deltaRho)**2 + (self.deltaP)**2
         if self.deltaRho==0:
             self.chiAVG = chiHat
