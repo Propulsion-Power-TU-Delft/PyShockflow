@@ -78,6 +78,11 @@ class FluidIdeal():
             gmma_pv = self.gmma
         return gmma_pv
     
+    def ComputeChiKappa_VinokurScheme_p_rho(self, p, rho):
+        chi = 0
+        kappa = self.gmma-1
+        return chi, kappa
+    
     
     
     
@@ -216,15 +221,7 @@ class FluidReal():
         mach = np.sqrt(2/(gamma_pv-1) * ((pt/p)**((gamma_pv-1)/gamma_pv) - 1))
         return mach
     
-    
-    def ComputeChiVinokurScheme_p_rho(self, p, rho):
-        e = CP.PropsSI("U", "P", p, "D", rho, self.fluid_name)
-        dp_drho_econst = CP.PropsSI("d(P)/d(D)|U", "P", p, "D", rho, self.fluid_name)
-        dp_de_rhoconst = CP.PropsSI("d(P)/d(U)|D", "P", p, "D", rho, self.fluid_name)
-        chi = dp_drho_econst - e/rho * dp_de_rhoconst
-        return dp_drho_econst
-    
-    
+
     def ComputeChiKappa_VinokurScheme_p_rho(self, p, rho):
         e = CP.PropsSI("U", "P", p, "D", rho, self.fluid_name)
         dp_drho_econst = CP.PropsSI("d(P)/d(D)|U", "P", p, "D", rho, self.fluid_name)

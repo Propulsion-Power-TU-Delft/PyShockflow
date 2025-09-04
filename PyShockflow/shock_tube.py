@@ -721,23 +721,17 @@ class ShockTube:
                 raise ValueError('Basic Roe scheme is not available for real gas model. Select Roe_Arabi or Roe_Vinokur, depending on the Roe Avg procedure that you want.')
             else:
                 roe = RoeScheme_Base(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
-                roe.ComputeAveragedVariables()
-                roe.ComputeAveragedEigenvalues()
-                roe.ComputeWaveStrengths()
                 flux = roe.ComputeFlux()
         elif flux_method.lower()=='roe_arabi':
             if self.fluid_model=='ideal':
                 raise ValueError('Roe_Arabi scheme is not available for ideal gas model. Select Standard Roe scheme.')
             else:
                 roe = RoeScheme_Generalized_Arabi(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
-                roe.ComputeAveragedVariables()
-                roe.ComputeAveragedEigenvalues()
-                roe.ComputeWaveStrengths()
                 flux = roe.ComputeFlux()
         elif flux_method.lower()=='roe_vinokur':
-            if self.fluid_model=='ideal':
-                raise ValueError('Roe_Vinokur scheme is not available for ideal gas model. Select Standard Roe scheme.')
-            else:
+            # if self.fluid_model=='ideal':
+            #     raise ValueError('Roe_Vinokur scheme is not available for ideal gas model. Select Standard Roe scheme.')
+            # else:
                 roe = RoeScheme_Generalized_Vinokur(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
                 roe.ComputeAveragedVariables()
                 flux = roe.ComputeFlux()

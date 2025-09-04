@@ -111,24 +111,20 @@ class RoeScheme_Base:
         """
         Compute the Roe flux. The flux is computed for 1D problems.
         """
+        self.ComputeAveragedVariables()
+        self.ComputeAveragedEigenvalues()
+        self.ComputeAveragedEigenvectors()
+        self.ComputeWaveStrengths()
+        
         fluxL = self.EulerFlux(self.u1L, self.u2L, self.u3L)
         fluxR = self.EulerFlux(self.u1R, self.u2R, self.u3R)
         fluxRoe = 0.5*(fluxL+fluxR)
 
         # compute the entropy fixed abs eigenvalues
-        absEig = np.zeros(3)
         if entropy_fix==False:
             absEig = np.abs(self.lambda_vec)
         else:
-            ## Harten-Hymann entropy fix
-            self.ComputeLeftRightEigenvalues()
-            for k in range(3):
-                tmp = np.array([0, self.lambda_vec[k]-self.lambda_vecL[k], self.lambda_vec[k]-self.lambda_vecR[k]])
-                delta = np.max(tmp)
-                if np.abs(self.lambda_vec[k])<delta:
-                    absEig[k] = delta
-                else:
-                    absEig[k] = np.abs(self.lambda_vec[k])
+            absEig = entropy_fix_hartenhyman(self.lambda_vec, self.aAVG)
 
         for iDim in range(3):
             for jVec in range(3):
@@ -195,6 +191,11 @@ class RoeScheme_Generalized_Arabi(RoeScheme_Base):
         """
         Assemble the global flux, average + dissipation
         """
+        self.ComputeAveragedVariables()
+        self.ComputeAveragedEigenvalues()
+        self.ComputeAveragedEigenvectors()
+        self.ComputeWaveStrengths()
+        
         fluxL = self.EulerFlux(self.u1L, self.u2L, self.u3L)
         fluxR = self.EulerFlux(self.u1R, self.u2R, self.u3R)
 
@@ -210,19 +211,10 @@ class RoeScheme_Generalized_Arabi(RoeScheme_Base):
         self.deltaF = np.zeros(3)
 
         # compute the entropy fixed abs eigenvalues
-        absEig = np.zeros(3)
         if entropy_fix==False:
             absEig = np.abs(self.lambda_vec)
         else:
-            ## Harten-Hymann entropy fix
-            self.ComputeLeftRightEigenvalues()
-            for k in range(3):
-                tmp = np.array([0, self.lambda_vec[k]-self.lambda_vecL[k], self.lambda_vec[k]-self.lambda_vecR[k]])
-                delta = np.max(tmp)
-                if np.abs(self.lambda_vec[k])<delta:
-                    absEig[k] = delta
-                else:
-                    absEig[k] = np.abs(self.lambda_vec[k])
+            absEig = entropy_fix_hartenhyman(self.lambda_vec, self.aAVG)
 
         self.deltaF[0] = absEig[0]*self.alphas[0] + absEig[1]*self.alphas[1] + absEig[2]*self.alphas[2]
         self.deltaF[1] = (self.uAVG+self.aAVG)*absEig[0]*self.alphas[0] + (self.uAVG-self.aAVG)*absEig[1]*self.alphas[1] + self.uAVG*absEig[2]*self.alphas[2]
@@ -266,25 +258,28 @@ class RoeScheme_Generalized_Vinokur(RoeScheme_Base):
         # compute mean initial guess state
         p_mean = 0.5*(self.pL+self.pR)
         eL = self.fluid.ComputeStaticEnergy_p_rho(self.pL, self.rhoL)
+        rho_mean = 0.5*(self.rhoL+self.rhoR)
+        rhoeL = self.rhoL*eL
         eR = self.fluid.ComputeStaticEnergy_p_rho(self.pR, self.rhoR)
-        e_mean = 0.5*(eL+eR)
+        rhoeR = self.rhoR*eR
+        rhoe_mean = 0.5*(rhoeL+rhoeR)
+        e_mean = rhoe_mean/rho_mean
         
         chiL, kappaL = self.fluid.ComputeChiKappa_VinokurScheme_p_rho(self.pL, self.rhoL)
         chiR, kappaR = self.fluid.ComputeChiKappa_VinokurScheme_p_rho(self.pR, self.rhoR)
+        chiM, kappaM = self.fluid.ComputeChiKappa_VinokurScheme_p_rho(p_mean, rho_mean)
         chiHat = (chiL + chiR) / 2.0
         kappaHat = (kappaL + kappaR) / 2.0
-        
-        eL = self.fluid.ComputeStaticEnergy_p_rho(self.pL, self.rhoL)
-        eR = self.fluid.ComputeStaticEnergy_p_rho(self.pR, self.rhoR)
-        delta_rhoe = (self.rhoR*eR - self.rhoL*eL)
+        delta_rhoe = (rhoeR - rhoeL)
         
         # projection procedure to compute the average state starting fro the initial guess (hat values)
         error_term = self.deltaP - chiHat*self.deltaRho - kappaHat*delta_rhoe
-        kappah_hat = 0.5 * (kappaL*self.hL + kappaR*self.hR)
-        sHat = chiHat + kappah_hat
-        self.cAVG = np.sqrt(sHat)
+        hM = 0.5*(self.hL+self.hR)
+        kappah_hat = (kappaL*self.hL + kappaR*self.hR) / 2.0
+        csquare_L = chiL + kappaL*self.hL
+        csquare_R = chiR + kappaR*self.hR
+        sHat = (csquare_L + csquare_R) / 2.0
         D_term = (sHat*self.deltaRho)**2 + (self.deltaP)**2
-        
         if self.deltaRho==0:
             self.chiAVG = chiHat
         else:
@@ -307,28 +302,54 @@ class RoeScheme_Generalized_Vinokur(RoeScheme_Base):
         # compute the Eigenvectors matrices
         k1 = 0.5*self.kappaAVG*self.uAVG**2 + self.kappaAVG
         k2 = 0.5*self.uAVG**2 - self.chiAVG/self.kappaAVG
+        
+        # right eigenvectors matrix
         matrixR = np.array([[1, 1, 1],
                             [self.uAVG, self.uAVG+self.aAVG, self.uAVG-self.aAVG],
                             [k2, self.htAVG + self.aAVG*self.uAVG, self.htAVG - self.aAVG*self.uAVG]])
         
+        # left eigenvectors matrix
         matrixRinv = np.array([[1-k1/self.aAVG**2, self.kappaAVG*self.uAVG/self.aAVG**2, -self.kappaAVG/self.aAVG**2],
                                [0.5*(k1/self.aAVG**2-self.uAVG/self.aAVG), -0.5*(self.kappaAVG*self.uAVG/self.aAVG**2-1/self.aAVG), 0.5*self.kappaAVG/self.aAVG**2],
                                [0.5*(k1/self.aAVG**2+self.uAVG/self.aAVG), -0.5*(self.kappaAVG*self.uAVG/self.aAVG**2+1/self.aAVG), 0.5*self.kappaAVG/self.aAVG**2]])
+                
+        # eigenvalues, to fix
+        eigsAVG = np.array([self.uAVG, self.uAVG+self.aAVG, self.uAVG-self.aAVG])
+        if entropy_fix==False:
+            absEig = np.abs(eigsAVG)
+        else:
+            absEig = entropy_fix_hartenhyman(eigsAVG, self.aAVG)
         
-        matrixLambda = np.array([[self.uAVG, 0, 0],
-                                 [0, self.uAVG+self.aAVG, 0],
-                                 [0, 0, self.uAVG-self.aAVG]])
-        matrixLambda = np.abs(matrixLambda)
+        # eigenvalues matrix
+        matrixLambda = np.diag(absEig)
         
-        deltaFlux = matrixR @ matrixLambda @ matrixRinv @ (fluxR.reshape(3,1) - fluxL.reshape(3,1))
+        # compute the Flux
+        deltaU = np.array([self.u1R-self.u1L, self.u2R-self.u2L, self.u3R-self.u3L]).reshape(3,1)
+        deltaFlux = matrixR @ matrixLambda @ matrixRinv @ deltaU
         fluxRoe = 0.5*(fluxL+fluxR) - 0.5*deltaFlux.flatten()
         return fluxRoe
         
 
-        
-        
-        
-        
+def entropy_fix_hartenhyman(eigs, aAVG, kappa=0.2):
+    """
+    Apply Harten entropy fix to eigenvalues.
+    
+    eigs : ndarray of shape (3,)
+        Raw Roe eigenvalues [u, u+a, u-a].
+    aAVG : float
+        Roe-averaged sound speed.
+    kappa : float
+        Fraction of sound speed to set threshold (default 0.1).
+    """
+    delta = kappa * aAVG
+    fixed = np.zeros_like(eigs)
+    for i, lam in enumerate(eigs):
+        if abs(lam) < delta:
+            fixed[i] = 0.5 * (lam**2 / delta + delta)
+        else:
+            fixed[i] = abs(lam)
+    return fixed
+
 
 
 
