@@ -155,6 +155,13 @@ class Config:
         except:
             return True # true by default
     
+    def getEntropyFixCoefficient(self):
+        try:
+            res = float(self.config_parser.get('SIMULATION', 'ENTROPY_FIX_COEFFICIENT'))
+            return res
+        except:
+            return 0.2 # 0.2 by default
+    
     def adaptMeshRefinementExtremities(self):
         try:
             res = str(self.config_parser.get('SIMULATION', 'ADAPT_MESH_REFINEMENT')).lower() 

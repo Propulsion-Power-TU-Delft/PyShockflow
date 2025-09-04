@@ -483,6 +483,7 @@ class ShockTube:
         impose high_order=True
         """
         self.entropyFixActive = self.config.isEntropyFixActive()
+        self.entropyFixCoefficient = self.config.getEntropyFixCoefficient()
         flux_method = self.config.getNumericalScheme()
         high_order = self.config.getMUSCLReconstruction()
         
@@ -491,6 +492,10 @@ class ShockTube:
         print(" "*33 + "START SOLVER")
         print("Numerical flux method: %s" %(flux_method))
         print("MUSCL reconstruction: %s" %high_order)
+        print("Entropy fix active: %s" %self.entropyFixActive)
+        if self.entropyFixActive:
+            print("Entropy fix coefficient: %s" %self.entropyFixCoefficient)
+        print("="*80)
         print()
 
         # short aliases
@@ -722,17 +727,17 @@ class ShockTube:
                 raise ValueError('Basic Roe scheme is not available for real gas model. Select Roe_Arabi or Roe_Vinokur, depending on the Roe Avg procedure that you want.')
             else:
                 roe = RoeScheme_Base(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
-                flux = roe.ComputeFlux(entropy_fix=self.entropyFixActive)
+                flux = roe.ComputeFlux(entropyFixActive=self.entropyFixActive, fixCoefficient=self.entropyFixCoefficient)
         elif flux_method.lower()=='roe_arabi':
             if self.fluid_model=='ideal':
                 raise ValueError('Roe_Arabi scheme is not available for ideal gas model. Select Standard Roe scheme.')
             else:
                 roe = RoeScheme_Generalized_Arabi(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
-                flux = roe.ComputeFlux(entropy_fix=self.entropyFixActive)
+                flux = roe.ComputeFlux(entropyFixActive=self.entropyFixActive, fixCoefficient=self.entropyFixCoefficient)
         elif flux_method.lower()=='roe_vinokur':
                 roe = RoeScheme_Generalized_Vinokur(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
                 roe.ComputeAveragedVariables()
-                flux = roe.ComputeFlux(entropy_fix=self.entropyFixActive)
+                flux = roe.ComputeFlux(entropyFixActive=self.entropyFixActive, fixCoefficient=self.entropyFixCoefficient)
         elif flux_method.lower()=='muscl-hancock':
             if self.fluid_model!='ideal':
                 raise ValueError('MUSCL-Hancock scheme is available only for ideal gas model')

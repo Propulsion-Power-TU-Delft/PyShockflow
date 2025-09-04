@@ -107,7 +107,7 @@ class RoeScheme_Base:
                                     self.uR+self.aR])
         
 
-    def ComputeFlux(self, entropy_fix=True):
+    def ComputeFlux(self, entropyFixActive, fixCoefficient):
         """
         Compute the Roe flux. The flux is computed for 1D problems.
         """
@@ -121,10 +121,10 @@ class RoeScheme_Base:
         fluxRoe = 0.5*(fluxL+fluxR)
 
         # compute the entropy fixed abs eigenvalues
-        if entropy_fix==False:
+        if entropyFixActive==False:
             absEig = np.abs(self.lambda_vec)
         else:
-            absEig = entropy_fix_hartenhyman(self.lambda_vec, self.aAVG)
+            absEig = entropy_fix_hartenhyman(self.lambda_vec, self.aAVG, fixCoefficient)
 
         for iDim in range(3):
             for jVec in range(3):
@@ -187,7 +187,7 @@ class RoeScheme_Generalized_Arabi(RoeScheme_Base):
                                     self.uR])
     
 
-    def ComputeFlux(self, entropy_fix=True):
+    def ComputeFlux(self, entropyFixActive, fixCoefficient):
         """
         Assemble the global flux, average + dissipation
         """
@@ -199,25 +199,15 @@ class RoeScheme_Generalized_Arabi(RoeScheme_Base):
         fluxL = self.EulerFlux(self.u1L, self.u2L, self.u3L)
         fluxR = self.EulerFlux(self.u1R, self.u2R, self.u3R)
 
-        self.ComputeDeltaFlux(entropy_fix)
-        fluxRoe = 0.5*(fluxL+fluxR) - 0.5*self.deltaF
-        return fluxRoe
-    
-
-    def ComputeDeltaFlux(self, entropy_fix):
-        """
-        Compute the correction for the flux. Formulation taken from "A simple extension of Roe's scheme for real gases" by Arabi et al.
-        """
-        self.deltaF = np.zeros(3)
-
         # compute the entropy fixed abs eigenvalues
-        if entropy_fix==False:
+        if entropyFixActive==False:
             absEig = np.abs(self.lambda_vec)
         else:
-            absEig = entropy_fix_hartenhyman(self.lambda_vec, self.aAVG)
+            absEig = entropy_fix_hartenhyman(self.lambda_vec, self.aAVG, fixCoefficient)
 
-        self.deltaF[0] = absEig[0]*self.alphas[0] + absEig[1]*self.alphas[1] + absEig[2]*self.alphas[2]
-        self.deltaF[1] = (self.uAVG+self.aAVG)*absEig[0]*self.alphas[0] + (self.uAVG-self.aAVG)*absEig[1]*self.alphas[1] + self.uAVG*absEig[2]*self.alphas[2]
+        deltaF = np.zeros(3)
+        deltaF[0] = absEig[0]*self.alphas[0] + absEig[1]*self.alphas[1] + absEig[2]*self.alphas[2]
+        deltaF[1] = (self.uAVG+self.aAVG)*absEig[0]*self.alphas[0] + (self.uAVG-self.aAVG)*absEig[1]*self.alphas[1] + self.uAVG*absEig[2]*self.alphas[2]
 
         X = (self.rhoR*self.uR*self.htR)-(self.rhoL*self.uL*self.htL)- \
             (self.hAVG+self.uAVG*self.aAVG)*(self.uAVG+self.aAVG)*(1/2/self.aAVG**2*(self.deltaP+self.rhoAVG*self.aAVG*self.deltaU)) - \
@@ -228,9 +218,13 @@ class RoeScheme_Generalized_Arabi(RoeScheme_Base):
         else:
             X *= -1
         
-        self.deltaF[2] = (self.hAVG+self.uAVG*self.aAVG)*absEig[0]*(self.alphas[0]) + \
+        deltaF[2] = (self.hAVG+self.uAVG*self.aAVG)*absEig[0]*(self.alphas[0]) + \
                          (self.hAVG-self.uAVG*self.aAVG)*absEig[1]*(self.alphas[1]) + X
-
+                         
+        fluxRoe = 0.5*(fluxL+fluxR) - 0.5*deltaF
+        return fluxRoe
+    
+    
 
 class RoeScheme_Generalized_Vinokur(RoeScheme_Base):
     """
@@ -293,7 +287,7 @@ class RoeScheme_Generalized_Vinokur(RoeScheme_Base):
         
         self.aAVG = np.sqrt(self.chiAVG + self.kappaAVG*self.hAVG)
     
-    def ComputeFlux(self, entropy_fix=True):
+    def ComputeFlux(self, entropyFixActive, fixCoefficient):
         """
         Assemble the global flux, average + dissipation
         """
@@ -316,10 +310,10 @@ class RoeScheme_Generalized_Vinokur(RoeScheme_Base):
                 
         # eigenvalues, to fix
         eigsAVG = np.array([self.uAVG, self.uAVG+self.aAVG, self.uAVG-self.aAVG])
-        if entropy_fix==False:
+        if entropyFixActive==False:
             absEig = np.abs(eigsAVG)
         else:
-            absEig = entropy_fix_hartenhyman(eigsAVG, self.aAVG)
+            absEig = entropy_fix_hartenhyman(eigsAVG, self.aAVG, fixCoefficient)
         
         # eigenvalues matrix
         matrixLambda = np.diag(absEig)
@@ -331,7 +325,7 @@ class RoeScheme_Generalized_Vinokur(RoeScheme_Base):
         return fluxRoe
         
 
-def entropy_fix_hartenhyman(eigs, aAVG, kappa=0.2):
+def entropy_fix_hartenhyman(eigs, aAVG, kappa):
     """
     Apply Harten entropy fix to eigenvalues.
     
