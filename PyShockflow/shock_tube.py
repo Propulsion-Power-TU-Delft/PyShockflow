@@ -4,7 +4,6 @@ import os
 import pickle
 import csv
 import sys
-import copy
 from PyShockflow.riemann_problem import RiemannProblem
 from PyShockflow.roe_scheme import RoeScheme_Base, RoeScheme_Generalized_Arabi, RoeScheme_Generalized_Vinokur
 from PyShockflow.fluid import FluidIdeal, FluidReal

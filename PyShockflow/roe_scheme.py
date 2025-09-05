@@ -92,19 +92,6 @@ class RoeScheme_Base:
         self.alphas[0] = 1/2/self.aAVG**2 *(self.pR-self.pL-self.rhoAVG*self.aAVG*(self.uR-self.uL))
         self.alphas[1] = self.rhoR-self.rhoL - (self.pR-self.pL)/self.aAVG**2
         self.alphas[2] = 1/2/self.aAVG**2*(self.pR-self.pL + self.rhoAVG*self.aAVG*(self.uR-self.uL))
-
-
-    def ComputeLeftRightEigenvalues(self):
-        """
-        Compute the eigs of left and right values, needed for the entropy fix (Harten-Hyman)
-        """
-        self.lambda_vecL = np.array([self.uL-self.aL, 
-                                    self.uL,
-                                    self.uL+self.aL])
-        
-        self.lambda_vecR = np.array([self.uR-self.aR, 
-                                    self.uR,
-                                    self.uR+self.aR])
         
 
     def ComputeFlux(self, entropyFixActive, fixCoefficient):
@@ -152,6 +139,7 @@ class RoeScheme_Generalized_Arabi(RoeScheme_Base):
         self.deltaU = (self.uR - self.uL)
         self.deltaRho = (self.rhoR - self.rhoL)
     
+    
     def ComputeAveragedVariables(self):
         """
         Compute the Roe averaged variables for the 1D Euler equations
@@ -160,6 +148,7 @@ class RoeScheme_Generalized_Arabi(RoeScheme_Base):
         self.uAVG = self.RoeAVG(self.uL, self.uR)
         self.hAVG = self.RoeAVG(self.htL, self.htR)
         self.aAVG = self.RoeAVG(self.aL, self.aR)
+
 
     def ComputeWaveStrengths(self):
         self.alphas = np.zeros(3)
@@ -174,22 +163,9 @@ class RoeScheme_Generalized_Arabi(RoeScheme_Base):
                                     self.uAVG])
     
 
-    def ComputeLeftRightEigenvalues(self):
-        """
-        Compute the eigs of left and right values, needed for the entropy fix (Harten-Hyman)
-        """
-        self.lambda_vecL = np.array([self.uL+self.aL, 
-                                    self.uL-self.aL,
-                                    self.uL])
-        
-        self.lambda_vecR = np.array([self.uR+self.aR, 
-                                    self.uR-self.aR,
-                                    self.uR])
-    
-
     def ComputeFlux(self, entropyFixActive, fixCoefficient):
         """
-        Assemble the global flux, average + dissipation
+        Assemble the global flux, average + dissipation, following the approach of the article
         """
         self.ComputeAveragedVariables()
         self.ComputeAveragedEigenvalues()
@@ -238,9 +214,10 @@ class RoeScheme_Generalized_Vinokur(RoeScheme_Base):
         self.deltaU = (self.uR - self.uL)
         self.deltaRho = (self.rhoR - self.rhoL)
     
+    
     def ComputeAveragedVariables(self):
         """
-        Compute the Roe averaged state following approach of Vinokur
+        Compute the Roe averaged state following the approach described in the articleof Vinokur
         """
         alpha = np.sqrt(self.rhoL) / (np.sqrt(self.rhoL)+np.sqrt(self.rhoR))
         self.uAVG = alpha*self.uL + (1-alpha)*self.uR
@@ -287,9 +264,10 @@ class RoeScheme_Generalized_Vinokur(RoeScheme_Base):
         
         self.aAVG = np.sqrt(self.chiAVG + self.kappaAVG*self.hAVG)
     
+    
     def ComputeFlux(self, entropyFixActive, fixCoefficient):
         """
-        Assemble the global flux, average + dissipation
+        Compute the global flux, average + dissipation
         """
         fluxL = self.EulerFlux(self.u1L, self.u2L, self.u3L)
         fluxR = self.EulerFlux(self.u1R, self.u2R, self.u3R)
@@ -334,7 +312,7 @@ def entropy_fix_hartenhyman(eigs, aAVG, kappa):
     aAVG : float
         Roe-averaged sound speed.
     kappa : float
-        Fraction of sound speed to set threshold (default 0.1).
+        Fix coefficient (default 0.2).
     """
     delta = kappa * aAVG
     fixed = np.zeros_like(eigs)
