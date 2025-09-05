@@ -6,11 +6,10 @@ from PyShockflow.shock_tube import ShockTube
 import os
 
 
-resultsFile = ["Results/NoRefined_NX_250/Results.pik",
-               "Results/Refined_NoControlExpRatio_NX_250/Results.pik",
-               "Results/Refined_ControlExpRatio_NX_252/Results.pik"]
+resultsFile = ["Results/normal_NX_500/Results.pik",
+               "Results/refined_NX_598/Results.pik"]
 
-labels = ['No Refinement', 'Refinement', 'Refinement + Adaptation']
+labels = ['Normal', 'Local Refinement']
 
 outFolder = 'Pictures'
 os.makedirs(outFolder, exist_ok=True)
