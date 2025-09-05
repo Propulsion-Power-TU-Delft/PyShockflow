@@ -7,7 +7,6 @@ import sys
 import copy
 from PyShockflow.riemann_problem import RiemannProblem
 from PyShockflow.roe_scheme import RoeScheme_Base, RoeScheme_Generalized_Arabi, RoeScheme_Generalized_Vinokur
-from PyShockflow.muscl_hancock import MusclHancock
 from PyShockflow.fluid import FluidIdeal, FluidReal
 from PyShockflow.post_process import PostProcess
 from PyShockflow.euler_functions import *
@@ -695,33 +694,20 @@ class ShockTube:
         if flux_method.lower()=='godunov':
             if self.fluid_model!='ideal':
                 raise ValueError('Godunov scheme is available only for ideal gas model')
-            nx, nt = 51, 51
-            x = np.linspace(-self.dx[il]/2, self.dx[ir]/2, nx)
-            t = np.linspace(0, dt, nt)
-            riem = RiemannProblem(x, t)
-            riem.InitializeState([rhoL, rhoR, uL, uR, pL, pR])
-            riem.InitializeSolutionArrays()
-            riem.ComputeStarRegion()
-            riem.Solve(space_domain='interface', time_domain='global') # compute Riemann solution only at x=0, but on all time instants
-            rho, u, p = riem.GetSolutionInTime()
-            u1, u2, u3 = GetConservativesFromPrimitives(rho, u, p, self.fluid)
-            u1AVG, u2AVG, u3AVG = np.sum(u1)/len(u1), np.sum(u2)/len(u2), np.sum(u3)/len(u3)
-            flux = EulerFluxFromConservatives(u1AVG, u2AVG, u3AVG, self.fluid) 
-        elif flux_method.lower=='waf':
-            if self.fluid_model!='ideal':
-                raise ValueError('WAF scheme is available only for ideal gas model')
-            nx, nt = 51, 51
-            x = np.linspace(-self.dx/2, self.dx/2, nx)
-            t = np.linspace(0, dt, nt)
-            riem = RiemannProblem(x, t)
-            riem.InitializeState([rhoL, rhoR, uL, uR, pL, pR])
-            riem.InitializeSolutionArrays()
-            riem.ComputeStarRegion()
-            riem.Solve(space_domain='global', time_domain='interface') # compute Riemann solution only at deltaT/2, but on whole space-domain
-            rho, u, p = riem.GetSolutionInSpace()
-            u1, u2, u3 = GetConservativesFromPrimitives(rho, u, p, self.fluid)
-            u1AVG, u2AVG, u3AVG = np.sum(u1)/len(u1), np.sum(u2)/len(u2), np.sum(u3)/len(u3)
-            flux = EulerFluxFromConservatives(u1AVG, u2AVG, u3AVG, self.fluid)
+            else:
+                # Godunov flux calculation
+                nx, nt = 51, 51 
+                x = np.linspace(-self.dx[il]/2, self.dx[ir]/2, nx)
+                t = np.linspace(0, dt, nt)
+                riem = RiemannProblem(x, t)
+                riem.InitializeState([rhoL, rhoR, uL, uR, pL, pR])
+                riem.InitializeSolutionArrays()
+                riem.ComputeStarRegion()
+                riem.Solve(space_domain='interface', time_domain='global') # compute Riemann solution only at x=0, but on all time instants
+                rho, u, p = riem.GetSolutionInTime()
+                u1, u2, u3 = GetConservativesFromPrimitives(rho, u, p, self.fluid)
+                u1AVG, u2AVG, u3AVG = np.sum(u1)/len(u1), np.sum(u2)/len(u2), np.sum(u3)/len(u3)
+                flux = EulerFluxFromConservatives(u1AVG, u2AVG, u3AVG, self.fluid) 
         elif flux_method.lower()=='roe':
             if self.fluid_model=='real':
                 raise ValueError('Basic Roe scheme is not available for real gas model. Select Roe_Arabi or Roe_Vinokur, depending on the Roe Avg procedure that you want.')
@@ -738,22 +724,6 @@ class ShockTube:
                 roe = RoeScheme_Generalized_Vinokur(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
                 roe.ComputeAveragedVariables()
                 flux = roe.ComputeFlux(entropyFixActive=self.entropyFixActive, fixCoefficient=self.entropyFixCoefficient)
-        elif flux_method.lower()=='muscl-hancock':
-            if self.fluid_model!='ideal':
-                raise ValueError('MUSCL-Hancock scheme is available only for ideal gas model')
-            # be careful when you are at the border, since in reality you would need two halo nodes, not just one
-            if il>1 and ir<self.nNodesHalo-2:
-                rhoLL, rhoRR = primitive['Density'][il-1], primitive['Density'][ir+1]
-                uLL, uRR = primitive['Velocity'][il-1], primitive['Velocity'][ir+1]
-                pLL, pRR = primitive['Pressure'][il-1], primitive['Pressure'][ir+1]
-            else: # no extrapolation for extreme cells over the halo nodes
-                rhoLL, rhoRR = rhoL, rhoR
-                uLL, uRR = uL, uR
-                pLL, pRR = pL, pR
-            mhck = MusclHancock(rhoLL, rhoL, rhoR, rhoRR, uLL, uL, uR, uRR, pLL, pL, pR, pRR, self.dx)
-            mhck.ReconstructInterfaceValues()
-            mhck.EvolveInterfaceValues(self.dx, dt)
-            flux = mhck.ComputeRoeFlux()
         else:
             raise ValueError('Unknown flux method')
         
@@ -876,20 +846,6 @@ class ShockTube:
         
         return interpolatedNozzleArea
     
-    def InspectPrimitives(self):
-        plt.figure()
-        plt.plot(self.xNodesVirt, self.solution['Density'])
-        plt.title('Density [kg/m3]')
-        
-        plt.figure()
-        plt.plot(self.xNodesVirt, self.solution['Velocity'])
-        plt.title('Velocity [m/s]')
-        
-        plt.figure()
-        plt.plot(self.xNodesVirt, self.solution['Density'])
-        plt.title('Pressure [Pa]')
-        
-        
 
 
 
