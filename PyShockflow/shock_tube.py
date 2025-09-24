@@ -589,7 +589,10 @@ class ShockTube:
     
     def ComputeTimeStep(self, primitive):
         velocity = primitive['Velocity'][1:-1]
-        speedOfSound = self.fluid.ComputeSoundSpeed_p_rho(primitive['Pressure'][1:-1], primitive['Density'][1:-1])
+        speedOfSound = np.zeros_like(velocity)
+        for i in range(len(speedOfSound)):
+            speedOfSound[i] = self.fluid.ComputeSoundSpeed_p_rho(primitive['Pressure'][i+1], primitive['Density'][i+1])
+        # speedOfSound = self.fluid.ComputeSoundSpeed_p_rho(primitive['Pressure'][1:-1], primitive['Density'][1:-1])
         dtMax = np.min(self.dx[1:-1] * self.cflMax / (np.abs(velocity)+speedOfSound))
         return dtMax
     
