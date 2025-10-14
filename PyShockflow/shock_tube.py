@@ -256,8 +256,7 @@ class ShockTube:
         """
         initialConditions = {'Density': np.array([self.densityLeft, self.densityRight]), 
                              'Velocity': np.array([self.velocityLeft, self.velocityRight]), 
-                             'Pressure': np.array([self.pressureLeft, self.pressureRight]),
-                             'Temperature': np.array([self.temperatureLeft, self.temperatureRight])}
+                             'Pressure': np.array([self.pressureLeft, self.pressureRight])}
         
         print("Initial L/R density values [kg/m3]:          (%.6e, %.6e)" %(initialConditions['Density'][0], initialConditions['Density'][1]))
         print("Initial L/R velocity values [m/s]:           (%.6e, %.6e)" %(initialConditions['Velocity'][0], initialConditions['Velocity'][1]))
