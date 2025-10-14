@@ -35,7 +35,7 @@ class ShockTube:
             self.Rgas = self.config.getGasRConstant()
             self.fluid = FluidIdeal(self.gmma,self.Rgas)
         elif self.fluid_model.lower()=='real':
-            self.fluid = FluidReal(self.fluid_name, 'RefProp')
+            self.fluid = FluidReal(self.fluid_name, 'RefProp', print_error=True)
         
         # fluid initial states
         self.pressureLeft = self.config.getPressureLeft()
@@ -269,6 +269,7 @@ class ShockTube:
         
         for i in range(self.solution['Energy'].shape[0]):
             self.solution['Energy'][i] = self.fluid.ComputeStaticEnergy_p_rho(self.solution['Pressure'][i], self.solution['Density'][i])
+            
     
 
     def InitialConditionsArrays(self, dictIn):
