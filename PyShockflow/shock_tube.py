@@ -256,10 +256,11 @@ class ShockTube:
         """
         initialConditions = {'Density': np.array([self.densityLeft, self.densityRight]), 'Velocity': np.array([self.velocityLeft, self.velocityRight]), 'Pressure': np.array([self.pressureLeft, self.pressureRight])}
         
-        print("Initial L/R density values [kg/m3]:          (%.2e, %.2e)" %(initialConditions['Density'][0], initialConditions['Density'][1]))
-        print("Initial L/R velocity values [m/s]:           (%.2e, %.2e)" %(initialConditions['Velocity'][0], initialConditions['Velocity'][1]))
-        print("Initial L/R pressure values [bar]:           (%.2e, %.2e)" %(initialConditions['Pressure'][0]/1e5, initialConditions['Pressure'][1]/1e5))
+        print("Initial L/R density values [kg/m3]:          (%.6e, %.6e)" %(initialConditions['Density'][0], initialConditions['Density'][1]))
+        print("Initial L/R velocity values [m/s]:           (%.6e, %.6e)" %(initialConditions['Velocity'][0], initialConditions['Velocity'][1]))
+        print("Initial L/R pressure values [bar]:           (%.6e, %.6e)" %(initialConditions['Pressure'][0]/1e5, initialConditions['Pressure'][1]/1e5))
 
+        print('COmputing energy values for the initial state at the left and right boundaries')
         initialConditions['Energy'] = self.fluid.ComputeStaticEnergy_p_rho(initialConditions['Pressure'], initialConditions['Density'])
         print("Initial L/R energy values [J/kg]:            (%.2e, %.2e)" %(initialConditions['Energy'][0], initialConditions['Energy'][1]))
         for name in self.solutionNames:
