@@ -39,7 +39,7 @@ class ShockTube:
             tmp = ['RefProp', 'CoolProp', 'StanMix']
             if fluid_library not in tmp:
                 raise ValueError(f"Invalid fluid library: {fluid_library}. Must be one of {tmp}")
-            self.fluid = FluidReal(self.fluid_name, fluid_library, True)
+            self.fluid = FluidReal(self.fluid_name, fluid_library, False)
         
         # fluid initial states
         self.pressureLeft = self.config.getPressureLeft()
