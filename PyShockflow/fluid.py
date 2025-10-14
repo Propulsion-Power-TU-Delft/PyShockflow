@@ -3,8 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
 import sys
-
-sys.path.append('/Users/fneri/Documents/PhD/fluidproperties')
 import fluid_properties.fluid_properties as FP
 
 class FluidIdeal():
