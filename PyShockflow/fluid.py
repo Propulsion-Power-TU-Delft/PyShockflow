@@ -2,7 +2,10 @@ import CoolProp.CoolProp as CP
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
+import sys
 
+sys.path.append('/Users/fneri/Documents/PhD/fluidproperties')
+import fluid_properties.fluid_properties as FP
 
 class FluidIdeal():
     """
@@ -87,37 +90,185 @@ class FluidIdeal():
     
     
 
+# class FluidReal():
+#     """
+#     Real Fluid Class, where thermodynamic properties and transformations are taken from coolprop
+#     """
+#     def __init__(self, fluid_name):
+#         self.fluid_name = fluid_name
+    
+#     def ComputeStaticEnergy_p_rho(self, p, rho):
+#         e = CP.PropsSI('U', 'P', p, 'D', rho, self.fluid_name)
+#         return e
+    
+#     def ComputePressure_rho_e(self, rho, e):
+#         p = CP.PropsSI('P', 'D', rho, 'U', e, self.fluid_name)
+#         return p
+    
+#     def ComputeSoundSpeed_p_rho(self, p, rho):
+#         try:
+#             a = CP.PropsSI("A", "P", p, "D", rho, self.fluid_name)
+#             return a
+#         except:
+#             # two phase region (or close) 
+#             T = self.ComputeTemperature_p_rho(p, rho)
+#             try:
+#                 Q = CP.PropsSI("Q", "T", T, "P", p, self.fluid_name)
+#             except:
+#                 # if the state is very close to saturation line it fails to find the quality -> set artifically to 1
+#                 Q = 1
+
+#             # Speed of sound in liquid and vapor phases at the given T and P
+#             a_liquid = CP.PropsSI("A", "T", T, "Q", 0, self.fluid_name)  # sound speed for liquid phase
+#             a_vapor = CP.PropsSI("A", "T", T, "Q", 1, self.fluid_name)   # sound speed for vapor phase
+
+#             # Calculate weighted speed of sound based on quality
+#             a = (1 - Q) * a_liquid + Q * a_vapor
+#             return a
+    
+#     def ComputeMach_u_p_rho(self, u, p, rho):
+#         soundSpeed = self.ComputeSoundSpeed_p_rho(p, rho)
+#         return np.abs(u)/soundSpeed
+    
+#     def ComputeTemperature_p_rho(self, p, rho):
+#         T = CP.PropsSI('T', 'P', p, 'D', rho, self.fluid_name)
+#         return T
+    
+#     def ComputeDensity_p_T(self, p, T):
+#         rho = CP.PropsSI('D', 'P', p, 'T', T, self.fluid_name)
+#         return rho
+
+#     def ComputeEntropy_p_rho(self, p, rho):
+#         s = CP.PropsSI('S', 'P', p, 'D', rho, self.fluid_name)
+#         return s
+    
+#     def ComputeEntropy_p_T(self, p, T):
+#         s = CP.PropsSI('S', 'P', p, 'T', T, self.fluid_name)
+#         return s
+    
+#     def ComputeFunDerGamma_p_rho(self, p, rho):
+#         try: # if single phase this will work
+#             G = CP.PropsSI("FUNDAMENTAL_DERIVATIVE_OF_GAS_DYNAMICS", "P", p, "D", rho, self.fluid_name)
+#             return G
+#         except: # if close to two phase, we need to do like the speed of sound
+#             T = self.ComputeTemperature_p_rho(p, rho)
+#             try:
+#                 Q = CP.PropsSI("Q", "T", T, "P", p, self.fluid_name)
+#             except:
+#                 # if the state is very close to saturation line it fails to find the quality -> set artifically to 1
+#                 Q = 1
+
+#             # G in liquid and vapor phases at the given T
+#             G_liquid = CP.PropsSI("FUNDAMENTAL_DERIVATIVE_OF_GAS_DYNAMICS", "T", T, "Q", 0, self.fluid_name)  # sound speed for liquid phase
+#             G_vapor = CP.PropsSI("FUNDAMENTAL_DERIVATIVE_OF_GAS_DYNAMICS", "T", T, "Q", 1, self.fluid_name)   # sound speed for vapor phase
+
+#             # Calculate weighted G based on quality
+#             G = (1 - Q) * G_liquid + Q * G_vapor
+#             return G
+        
+#     def ComputeComprFactorZ_p_rho(self, p, rho):
+#         Z = CP.PropsSI('Z', 'P', p, 'D', rho, self.fluid_name)
+#         return Z
+
+    
+#     def ComputeInletQuantities(self, pressure, totPressure, totTemperature, direction):
+#         """The full state must be reconstructed from the quantities given in the arguments.
+#         The entropy of the static and total state must be the same by definition. This is used to find the temperature.
+
+#         Args:
+#             pressure (float): static pressure
+#             totPressure (float): total pressure
+#             totTemperature (float): total temperature
+#         """
+#         def compute_function_residual(temperatureGuess):
+#             entropyStatic = self.ComputeEntropy_p_T(pressure, temperatureGuess)
+#             entropyTotal = self.ComputeEntropy_p_T(totPressure, totTemperature)
+#             residual = entropyStatic - entropyTotal
+#             return residual
+
+#         temperature = fsolve(compute_function_residual, totTemperature)[0]
+#         # if temperature > totTemperature or temperature < totTemperature/2:
+#         #     temperature = totTemperature*0.9
+
+        
+#         density = self.ComputeDensity_p_T(pressure, temperature)
+#         gamma_pv = self.Compute_gammapv_p_rho(pressure, density)
+#         mach = self.ComputeMach_pt_p_gammapv(totPressure, pressure, gamma_pv)
+#         soundSpeed = self.ComputeSoundSpeed_p_rho(pressure, density)
+#         velocity = direction * mach * soundSpeed
+#         energy = self.ComputeStaticEnergy_p_rho(pressure, density)
+#         return density, velocity, energy
+    
+    
+#     def Compute_gammapv_p_rho(self, p, rho):
+#         cp = CP.PropsSI("Cpmass", "P", p, "D", rho, self.fluid_name)
+#         cv = CP.PropsSI("Cvmass", "P", p, "D", rho, self.fluid_name)
+#         dp_drho_T = CP.PropsSI("d(P)/d(D)|T", "P", p, "D", rho, self.fluid_name)
+#         dp_dv_T = - rho**2 * dp_drho_T
+#         gmma_pv = -1/(p*rho) * cp/cv * dp_dv_T
+#         return gmma_pv
+    
+    
+#     def Compute_gammapt_p_T(self, p, T):
+#         rho = CP.PropsSI("D", "P", p, "T", T, self.fluid_name)
+#         d_rho_dT_P = CP.PropsSI("d(D)/d(T)|P", "P", p, "T", T, self.fluid_name)
+#         dv_dT_P = - d_rho_dT_P / (rho**2)
+#         cp = CP.PropsSI("Cpmass", "P", p, "T", T, self.fluid_name)
+#         gamma_pT = 1 / (1 - p/cp*dv_dT_P)
+#         return gamma_pT
+    
+    
+#     def ComputeMach_pt_p_gammapv(self, pt, p, gamma_pv):
+#         """Reference to equation 8.10 Nederstigt MS thesis
+#         """
+#         mach = np.sqrt(2/(gamma_pv-1) * ((pt/p)**((gamma_pv-1)/gamma_pv) - 1))
+#         return mach
+    
+
+#     def ComputeChiKappa_VinokurScheme_p_rho(self, p, rho):
+#         e = CP.PropsSI("U", "P", p, "D", rho, self.fluid_name)
+#         dp_drho_econst = CP.PropsSI("d(P)/d(D)|U", "P", p, "D", rho, self.fluid_name)
+#         dp_de_rhoconst = CP.PropsSI("d(P)/d(U)|D", "P", p, "D", rho, self.fluid_name)
+#         chi = dp_drho_econst - e/rho * dp_de_rhoconst
+#         kappa = dp_de_rhoconst / rho
+#         return chi, kappa
+
+
 class FluidReal():
     """
     Real Fluid Class, where thermodynamic properties and transformations are taken from coolprop
     """
-    def __init__(self, fluid_name):
+    def __init__(self, fluid_name, fluid_library):
         self.fluid_name = fluid_name
+        self.fluid_library = fluid_library
+        self.fluid = FP.fluid(fluid_library, fluid_name)
+        print()
+
     
     def ComputeStaticEnergy_p_rho(self, p, rho):
-        e = CP.PropsSI('U', 'P', p, 'D', rho, self.fluid_name)
+        e = FP.PropsSI('U', 'P', p, 'D', rho, self.fluid)
         return e
     
     def ComputePressure_rho_e(self, rho, e):
-        p = CP.PropsSI('P', 'D', rho, 'U', e, self.fluid_name)
+        p = FP.PropsSI('P', 'D', rho, 'U', e, self.fluid)
         return p
     
     def ComputeSoundSpeed_p_rho(self, p, rho):
         try:
-            a = CP.PropsSI("A", "P", p, "D", rho, self.fluid_name)
+            a = FP.PropsSI("A", "P", p, "D", rho, self.fluid)
             return a
         except:
             # two phase region (or close) 
             T = self.ComputeTemperature_p_rho(p, rho)
             try:
-                Q = CP.PropsSI("Q", "T", T, "P", p, self.fluid_name)
+                Q = FP.PropsSI("Q", "T", T, "P", p, self.fluid)
             except:
                 # if the state is very close to saturation line it fails to find the quality -> set artifically to 1
                 Q = 1
 
             # Speed of sound in liquid and vapor phases at the given T and P
-            a_liquid = CP.PropsSI("A", "T", T, "Q", 0, self.fluid_name)  # sound speed for liquid phase
-            a_vapor = CP.PropsSI("A", "T", T, "Q", 1, self.fluid_name)   # sound speed for vapor phase
+            a_liquid = FP.PropsSI("A", "T", T, "Q", 0, self.fluid)  # sound speed for liquid phase
+            a_vapor = FP.PropsSI("A", "T", T, "Q", 1, self.fluid)   # sound speed for vapor phase
 
             # Calculate weighted speed of sound based on quality
             a = (1 - Q) * a_liquid + Q * a_vapor
@@ -128,43 +279,43 @@ class FluidReal():
         return np.abs(u)/soundSpeed
     
     def ComputeTemperature_p_rho(self, p, rho):
-        T = CP.PropsSI('T', 'P', p, 'D', rho, self.fluid_name)
+        T = FP.PropsSI('T', 'P', p, 'D', rho, self.fluid)
         return T
     
     def ComputeDensity_p_T(self, p, T):
-        rho = CP.PropsSI('D', 'P', p, 'T', T, self.fluid_name)
+        rho = FP.PropsSI('D', 'P', p, 'T', T, self.fluid)
         return rho
 
     def ComputeEntropy_p_rho(self, p, rho):
-        s = CP.PropsSI('S', 'P', p, 'D', rho, self.fluid_name)
+        s = FP.PropsSI('S', 'P', p, 'D', rho, self.fluid)
         return s
     
     def ComputeEntropy_p_T(self, p, T):
-        s = CP.PropsSI('S', 'P', p, 'T', T, self.fluid_name)
+        s = FP.PropsSI('S', 'P', p, 'T', T, self.fluid)
         return s
     
     def ComputeFunDerGamma_p_rho(self, p, rho):
         try: # if single phase this will work
-            G = CP.PropsSI("FUNDAMENTAL_DERIVATIVE_OF_GAS_DYNAMICS", "P", p, "D", rho, self.fluid_name)
+            G = FP.PropsSI("FUNDAMENTAL_DERIVATIVE_OF_GAS_DYNAMICS", "P", p, "D", rho, self.fluid)
             return G
         except: # if close to two phase, we need to do like the speed of sound
             T = self.ComputeTemperature_p_rho(p, rho)
             try:
-                Q = CP.PropsSI("Q", "T", T, "P", p, self.fluid_name)
+                Q = FP.PropsSI("Q", "T", T, "P", p, self.fluid)
             except:
                 # if the state is very close to saturation line it fails to find the quality -> set artifically to 1
                 Q = 1
 
             # G in liquid and vapor phases at the given T
-            G_liquid = CP.PropsSI("FUNDAMENTAL_DERIVATIVE_OF_GAS_DYNAMICS", "T", T, "Q", 0, self.fluid_name)  # sound speed for liquid phase
-            G_vapor = CP.PropsSI("FUNDAMENTAL_DERIVATIVE_OF_GAS_DYNAMICS", "T", T, "Q", 1, self.fluid_name)   # sound speed for vapor phase
+            G_liquid = FP.PropsSI("FUNDAMENTAL_DERIVATIVE_OF_GAS_DYNAMICS", "T", T, "Q", 0, self.fluid)  # sound speed for liquid phase
+            G_vapor = FP.PropsSI("FUNDAMENTAL_DERIVATIVE_OF_GAS_DYNAMICS", "T", T, "Q", 1, self.fluid)   # sound speed for vapor phase
 
             # Calculate weighted G based on quality
             G = (1 - Q) * G_liquid + Q * G_vapor
             return G
         
     def ComputeComprFactorZ_p_rho(self, p, rho):
-        Z = CP.PropsSI('Z', 'P', p, 'D', rho, self.fluid_name)
+        Z = FP.PropsSI('Z', 'P', p, 'D', rho, self.fluid)
         return Z
 
     
@@ -198,19 +349,19 @@ class FluidReal():
     
     
     def Compute_gammapv_p_rho(self, p, rho):
-        cp = CP.PropsSI("Cpmass", "P", p, "D", rho, self.fluid_name)
-        cv = CP.PropsSI("Cvmass", "P", p, "D", rho, self.fluid_name)
-        dp_drho_T = CP.PropsSI("d(P)/d(D)|T", "P", p, "D", rho, self.fluid_name)
+        cp = FP.PropsSI("Cpmass", "P", p, "D", rho, self.fluid)
+        cv = FP.PropsSI("Cvmass", "P", p, "D", rho, self.fluid)
+        dp_drho_T = FP.PropsSI("d(P)/d(D)|T", "P", p, "D", rho, self.fluid)
         dp_dv_T = - rho**2 * dp_drho_T
         gmma_pv = -1/(p*rho) * cp/cv * dp_dv_T
         return gmma_pv
     
     
     def Compute_gammapt_p_T(self, p, T):
-        rho = CP.PropsSI("D", "P", p, "T", T, self.fluid_name)
-        d_rho_dT_P = CP.PropsSI("d(D)/d(T)|P", "P", p, "T", T, self.fluid_name)
+        rho = FP.PropsSI("D", "P", p, "T", T, self.fluid)
+        d_rho_dT_P = FP.PropsSI("d(D)/d(T)|P", "P", p, "T", T, self.fluid)
         dv_dT_P = - d_rho_dT_P / (rho**2)
-        cp = CP.PropsSI("Cpmass", "P", p, "T", T, self.fluid_name)
+        cp = FP.PropsSI("Cpmass", "P", p, "T", T, self.fluid)
         gamma_pT = 1 / (1 - p/cp*dv_dT_P)
         return gamma_pT
     
@@ -223,9 +374,9 @@ class FluidReal():
     
 
     def ComputeChiKappa_VinokurScheme_p_rho(self, p, rho):
-        e = CP.PropsSI("U", "P", p, "D", rho, self.fluid_name)
-        dp_drho_econst = CP.PropsSI("d(P)/d(D)|U", "P", p, "D", rho, self.fluid_name)
-        dp_de_rhoconst = CP.PropsSI("d(P)/d(U)|D", "P", p, "D", rho, self.fluid_name)
+        e = FP.PropsSI("U", "P", p, "D", rho, self.fluid)
+        dp_drho_econst = FP.PropsSI("d(P)/d(D)|U", "P", p, "D", rho, self.fluid)
+        dp_de_rhoconst = FP.PropsSI("d(P)/d(U)|D", "P", p, "D", rho, self.fluid)
         chi = dp_drho_econst - e/rho * dp_de_rhoconst
         kappa = dp_de_rhoconst / rho
         return chi, kappa
