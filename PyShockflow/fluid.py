@@ -245,6 +245,7 @@ class FluidReal():
         
         P = 9.3e5
         T = 645.15
+        
         print('prova 1')
         print(FP.PropsSI('D','P',P, 'T', T, self.fluid))
         
