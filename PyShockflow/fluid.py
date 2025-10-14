@@ -242,7 +242,16 @@ class FluidReal():
         self.fluid_name = fluid_name
         self.fluid_library = fluid_library
         self.fluid = FP.fluid(fluid_library, fluid_name, print_error=print_error)
-        print()
+        
+        P = 9.3e5
+        T = 645.15
+        print('prova 1')
+        print(FP.PropsSI('D','P',P, 'T', T, self.fluid))
+        
+        P = 1.0e4
+        T = 573.15
+        print('prova 2')
+        print(FP.PropsSI('D','P',P, 'T', T, self.fluid))
 
     
     def ComputeStaticEnergy_p_rho(self, p, rho):
