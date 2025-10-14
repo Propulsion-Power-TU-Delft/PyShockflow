@@ -261,6 +261,7 @@ class ShockTube:
         print("Initial L/R pressure values [bar]:           (%.2e, %.2e)" %(initialConditions['Pressure'][0]/1e5, initialConditions['Pressure'][1]/1e5))
 
         initialConditions['Energy'] = self.fluid.ComputeStaticEnergy_p_rho(initialConditions['Pressure'], initialConditions['Density'])
+        print("Initial L/R energy values [J/kg]:            (%.2e, %.2e)" %(initialConditions['Energy'][0], initialConditions['Energy'][1]))
         for name in self.solutionNames:
             self.solution[name] = self.CopyInitialState(initialConditions[name][0], initialConditions[name][1])
     
