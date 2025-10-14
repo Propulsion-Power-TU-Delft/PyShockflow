@@ -8,10 +8,10 @@ import os
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 
 
-solFile_1 = "Results/real_arabi_NX_200/Results.pik"
-solFile_2 = "../Validation_RealGas_CO2_post/Results/real_arabi_NX_200/Results.pik"
-solFile_3 = "../Validation_RealGas_CO2_post_refprop/Results/real_arabi_NX_200/Results.pik"
-# solFile_4 = "Results/real_vinokur_NX_500/Results.pik"
+solFile_1 = "Results/ideal_standard_NX_500/Results.pik"
+solFile_2 = "Results/ideal_vinokur_NX_500/Results.pik"
+solFile_3 = "Results/real_arabi_NX_500/Results.pik"
+solFile_4 = "Results/real_vinokur_NX_500/Results.pik"
 
 outFolder = 'Pictures'
 os.makedirs(outFolder, exist_ok=True)
@@ -27,11 +27,11 @@ with open(solFile_2, 'rb') as file:
     sol2 = pickle.load(file)
 with open(solFile_3, 'rb') as file:
     sol3 = pickle.load(file)
-# with open(solFile_4, 'rb') as file:
-#     sol4 = pickle.load(file)
+with open(solFile_4, 'rb') as file:
+    sol4 = pickle.load(file)
 
-sols = [sol1, sol2, sol3]
-labels = ['Pre', 'Post', 'Post-Refprop']
+sols = [sol1, sol2, sol3, sol4]
+labels = ['Ideal Roe Standard', 'Ideal Roe Vinokur', 'Real Roe Arabi', 'Real Roe Vinokur']
 
 fig, ax = plt.subplots(1, 3, figsize=(16, 4))
 
@@ -69,7 +69,7 @@ mark_inset(ax[1], inset3, loc1=2, loc2=4, fc="none", ec="0.5")
 
 ax[2].plot(pRef[:,0], pRef[:,1], 'ko', mfc='none', ms=5)
 for i,res in enumerate(sols):
-    ax[2].plot(res['X Coords'][1:-1], res['Primitive']['Pressure'][1:-1, -1]/1e6, '-') 
+    ax[2].plot(res['X Coords'][1:-1], res['Primitive']['Pressure'][1:-1, -1]/1e6) 
 ax[2].set_title(r'$P \ \rm{[MPa]}$')
 # Inset for Plot 2
 inset2 = inset_axes(ax[2], width="40%", height="40%", loc='upper right')

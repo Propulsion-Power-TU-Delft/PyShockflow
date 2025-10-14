@@ -35,7 +35,7 @@ class ShockTube:
             self.Rgas = self.config.getGasRConstant()
             self.fluid = FluidIdeal(self.gmma,self.Rgas)
         elif self.fluid_model.lower()=='real':
-            self.fluid = FluidReal(self.fluid_name, 'RefProp', True)
+            self.fluid = FluidReal(self.fluid_name, 'StanMix', True)
         
         # fluid initial states
         self.pressureLeft = self.config.getPressureLeft()
