@@ -254,14 +254,19 @@ class ShockTube:
         """
         Initialize the conditions based on initial state, defined by right and left values
         """
-        initialConditions = {'Density': np.array([self.densityLeft, self.densityRight]), 'Velocity': np.array([self.velocityLeft, self.velocityRight]), 'Pressure': np.array([self.pressureLeft, self.pressureRight])}
+        initialConditions = {'Density': np.array([self.densityLeft, self.densityRight]), 
+                             'Velocity': np.array([self.velocityLeft, self.velocityRight]), 
+                             'Pressure': np.array([self.pressureLeft, self.pressureRight]),
+                             'Temperature': np.array([self.temperatureLeft, self.temperatureRight])}
         
         print("Initial L/R density values [kg/m3]:          (%.6e, %.6e)" %(initialConditions['Density'][0], initialConditions['Density'][1]))
         print("Initial L/R velocity values [m/s]:           (%.6e, %.6e)" %(initialConditions['Velocity'][0], initialConditions['Velocity'][1]))
         print("Initial L/R pressure values [bar]:           (%.6e, %.6e)" %(initialConditions['Pressure'][0]/1e5, initialConditions['Pressure'][1]/1e5))
 
-        print('COmputing energy values for the initial state at the left and right boundaries')
-        initialConditions['Energy'] = self.fluid.ComputeStaticEnergy_p_rho(initialConditions['Pressure'], initialConditions['Density'])
+        # initialConditions['Energy'] = self.fluid.ComputeStaticEnergy_p_rho(initialConditions['Pressure'], initialConditions['Density'])
+        initialConditions['Energy'] = np.array([0,0])
+        initialConditions['Energy'][0] = self.fluid.ComputeStaticEnergy_p_rho(initialConditions['Pressure'][0], initialConditions['Density'][0])
+        initialConditions['Energy'][1] = self.fluid.ComputeStaticEnergy_p_rho(initialConditions['Pressure'][1], initialConditions['Density'][1])
         print("Initial L/R energy values [J/kg]:            (%.2e, %.2e)" %(initialConditions['Energy'][0], initialConditions['Energy'][1]))
         for name in self.solutionNames:
             self.solution[name] = self.CopyInitialState(initialConditions[name][0], initialConditions[name][1])
