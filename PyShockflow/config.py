@@ -162,6 +162,9 @@ class Config:
         except:
             return 0.2 # 0.2 by default
     
+    def getFluidLibrary(self):
+        return str(self.config_parser.get('FLUID', 'FLUID_LIBRARY'))
+    
     def adaptMeshRefinementExtremities(self):
         try:
             res = str(self.config_parser.get('SIMULATION', 'ADAPT_MESH_REFINEMENT')).lower() 
