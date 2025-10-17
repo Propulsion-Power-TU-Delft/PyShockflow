@@ -502,7 +502,7 @@ class ShockTube:
         print("Numerical flux method: %s" %(flux_method))
         print("MUSCL reconstruction: %s" %high_order)
         print("Entropy fix active: %s" %self.entropyFixActive)
-        if self.getFluidModel()=='real':
+        if self.config.getFluidModel()=='real':
             print("Real Gas model, library: %s" %self.getFluidLibrary())
         else:
             print("Ideal Gas model")
