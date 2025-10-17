@@ -44,16 +44,22 @@ class ShockTube:
         # fluid initial states
         self.pressureLeft = self.config.getPressureLeft()
         self.pressureRight = self.config.getPressureRight()
+        
         try:
             self.densityLeft = self.config.getDensityLeft()
             self.densityRight = self.config.getDensityRight()
+            self.temperatureLeft = self.fluid.ComputeTemperature_p_rho(self.pressureLeft, self.densityLeft)
+            self.temperatureRight = self.fluid.ComputeTemperature_p_rho(self.pressureRight, self.densityRight)
         except:
-            temperatureLeft = self.config.getTemperatureLeft()
-            temperatureRight = self.config.getTemperatureRight()
-            self.densityLeft = self.fluid.ComputeDensity_p_T(self.pressureLeft, temperatureLeft)
-            self.densityRight = self.fluid.ComputeDensity_p_T(self.pressureRight, temperatureRight)
+            self.temperatureLeft = self.config.getTemperatureLeft()
+            self.temperatureRight = self.config.getTemperatureRight()
+            self.densityLeft = self.fluid.ComputeDensity_p_T(self.pressureLeft, self.temperatureLeft)
+            self.densityRight = self.fluid.ComputeDensity_p_T(self.pressureRight, self.temperatureRight)
+        
         self.velocityLeft = self.config.getVelocityLeft()
         self.velocityRight = self.config.getVelocityRight()
+        self.energyLeft = self.fluid.ComputeStaticEnergy_p_rho(self.pressureLeft, self.densityLeft)
+        self.energyRight = self.fluid.ComputeStaticEnergy_p_rho(self.pressureRight, self.densityRight)
         
         # geometry
         self.length = self.config.getLength()
@@ -81,14 +87,14 @@ class ShockTube:
         print()  
         print("=" * 80)
         print(" "*32 + "SIMULATION DATA")
-        print("Length of the domain [m]:                    %.2e" % self.length)
+        print("Length of the domain [m]:                    %.6e" % self.length)
         print("Number of points:                            %i" % self.nNodes)
-        print("Final time instant [s]:                      %.2e" % self.timeMax)
+        print("Final time instant [s]:                      %.6e" % self.timeMax)
         print("Fluid name:                                  %s" % self.fluid_name)
         print("Fluid treatment:                             %s" % self.fluid_model)
         if self.fluid_model.lower()=='ideal':
-            print("Fluid cp/cv ratio [-]:                       %.2e" %self.gmma)
-            print("Fluid gas constant [J/kgK]:                  %.2e" %self.Rgas)
+            print("Fluid cp/cv ratio [-]:                       %.6e" %self.gmma)
+            print("Fluid gas constant [J/kgK]:                  %.6e" %self.Rgas)
         
         self.InstantiateSolutionArrays()
         self.InstantiateSolutionArraysConservatives()
@@ -256,19 +262,18 @@ class ShockTube:
         """
         initialConditions = {'Density': np.array([self.densityLeft, self.densityRight]), 
                              'Velocity': np.array([self.velocityLeft, self.velocityRight]), 
-                             'Pressure': np.array([self.pressureLeft, self.pressureRight])}
+                             'Pressure': np.array([self.pressureLeft, self.pressureRight]),
+                             'Energy': np.array([self.energyLeft, self.energyRight])}
         
-        print("Initial L/R density values [kg/m3]:          (%.6e, %.6e)" %(initialConditions['Density'][0], initialConditions['Density'][1]))
-        print("Initial L/R velocity values [m/s]:           (%.6e, %.6e)" %(initialConditions['Velocity'][0], initialConditions['Velocity'][1]))
-        print("Initial L/R pressure values [bar]:           (%.6e, %.6e)" %(initialConditions['Pressure'][0]/1e5, initialConditions['Pressure'][1]/1e5))
-
-        # initialConditions['Energy'] = self.fluid.ComputeStaticEnergy_p_rho(initialConditions['Pressure'], initialConditions['Density'])
-        initialConditions['Energy'] = np.array([0,0])
-        initialConditions['Energy'][0] = self.fluid.ComputeStaticEnergy_p_rho(initialConditions['Pressure'][0], initialConditions['Density'][0])
-        initialConditions['Energy'][1] = self.fluid.ComputeStaticEnergy_p_rho(initialConditions['Pressure'][1], initialConditions['Density'][1])
-        print("Initial L/R energy values [J/kg]:            (%.2e, %.2e)" %(initialConditions['Energy'][0], initialConditions['Energy'][1]))
         for name in self.solutionNames:
             self.solution[name] = self.CopyInitialState(initialConditions[name][0], initialConditions[name][1])
+        
+        print(f"Initial L/R density values [kg/m3]:          ({self.densityLeft:.6e}, {self.densityRight:.6e})")
+        print(f"Initial L/R velocity values [m/s]:           ({self.velocityLeft:.6e}, {self.velocityRight:.6e})")
+        print(f"Initial L/R pressure values [Pa]:            ({self.pressureLeft:.6e}, {self.pressureRight:.6e})")
+        print(f"Initial L/R temperature values [K]:          ({self.temperatureLeft:.6e}, {self.temperatureRight:.6e})")
+        print(f"Initial L/R energy values [J/kg]:            ({self.energyLeft:.6e}, {self.energyRight:.6e})")
+        
     
     def InitializeFromRestartFile(self, restartFile):
         with open(restartFile, 'rb') as file:
