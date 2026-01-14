@@ -8,9 +8,9 @@ from pyshockflow import *
 testNumber = [1,3,4,5]
 markerSize = 4
 # ANALYTICAL SOLUTIONS
-analyticalResults = ['../Analytical_RiemannProblems/solutions/Test%i.pik' % i for i in testNumber]
-godunovResults = ['../Godunov/Results/Test%i_NX_250/Results.pik' % i for i in testNumber]
-roeResults = ['../Roe/Results/Test%i_NX_250/Results.pik' % i for i in testNumber]
+analyticalResults = ['../analytical/solutions/Test%i.pik' % i for i in testNumber]
+godunovResults = ['../godunov/Results/Test%i_NX_250/Results.pik' % i for i in testNumber]
+roeResults = ['../roe/Results/Test%i_NX_250/Results.pik' % i for i in testNumber]
 
 figSize = (16, 4)
 for iInput in range(len(analyticalResults)):
