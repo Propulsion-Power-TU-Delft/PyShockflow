@@ -9,14 +9,14 @@ class Config:
         self.config_parser = configparser.ConfigParser()
         self.config_parser.read(config_file)
         
-    def get_config_value(self, section, option, default=None):
-        """
-        Helper method to retrieve a configuration value with a default fallback.
-        """
-        try:
-            return self.config_parser.get(section, option)
-        except (configparser.NoSectionError, configparser.NoOptionError):
-            return default
+    # def get_config_value(self, section, option, default=None):
+    #     """
+    #     Helper method to retrieve a configuration value with a default fallback.
+    #     """
+    #     try:
+    #         return self.config_parser.get(section, option)
+    #     except (configparser.NoSectionError, configparser.NoOptionError):
+    #         return default
     
     def getNumberOfPoints(self):
         return int(self.config_parser.get('SIMULATION', 'NUMBER_POINTS')) 

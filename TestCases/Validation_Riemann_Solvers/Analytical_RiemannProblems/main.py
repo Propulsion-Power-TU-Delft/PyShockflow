@@ -24,13 +24,13 @@ for key in initialCond.keys():
     initalCondition = initialCond[key]
     t = timeVectors[key]
     riem = RiemannProblem(x, t)
-    riem.InitializeState(initalCondition)
-    riem.InitializeSolutionArrays()
-    riem.ComputeStarRegion()
-    riem.Solve()
-    riem.ShowAnimation()
-    riem.DrawSpaceTimePlot(folder_name='pictures', file_name=key)
-    riem.SaveSolution(folder_name='solutions', file_name=key)
-    riem.PlotSolution(-1, folder_name='pictures', file_name=key)
+    riem.initializeState(initalCondition)
+    riem.initializeSolutionArrays()
+    riem.computeStarRegion()
+    riem.solve()
+    riem.showAnimation()
+    riem.drawSpaceTimePlot(folder_name='pictures', file_name=key)
+    riem.saveSolution(folder_name='solutions', file_name=key)
+    riem.plotSolution(-1, folder_name='pictures', file_name=key)
 
 plt.show()

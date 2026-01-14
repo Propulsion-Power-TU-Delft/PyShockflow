@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
-from PyShockflow.styles import *
+from pyshockflow.styles import *
 
 points = [500] 
 inputFiles = ['Results/rocket_NX_%i/Results.pik' %(_) for _ in points]
@@ -45,7 +45,7 @@ for ii, inputFile in enumerate(inputFiles):
     with open(inputFile, 'rb') as file:
         result = pickle.load(file)
     idxThroat = np.argmin(result['Area'])
-    mach = result['Fluid'].ComputeMach_u_p_rho(result['Primitive']['Velocity'], result['Primitive']['Pressure'], result['Primitive']['Density'])
+    mach = result['Fluid'].computeMach_u_p_rho(result['Primitive']['Velocity'], result['Primitive']['Pressure'], result['Primitive']['Density'])
     plt.plot(result['Time']*1e3, mach[idxThroat,:], label='Throat')
     plt.plot(result['Time']*1e3, mach[-2,:], label='Exit')
 plt.legend()

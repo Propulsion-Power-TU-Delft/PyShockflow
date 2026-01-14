@@ -62,7 +62,7 @@ total_chars_mid = total_chars//2
 
 # latex preamble
 # font_family = 'serif'
-# font_name = 'Computer Modern'
+# font_name = 'computer Modern'
 # plt.rc('text', usetex=True)
 # plt.rc('font', family=font_family)
 # plt.rc('font', serif=font_name)

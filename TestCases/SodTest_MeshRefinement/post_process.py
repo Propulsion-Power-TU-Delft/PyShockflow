@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
-from PyShockflow.riemann_problem import RiemannProblem
-from PyShockflow.shock_tube import ShockTube
+from pyshockflow import RiemannProblem
+from pyshockflow import ShockTube
 import os
 
 
@@ -36,7 +36,7 @@ ax[1, 0].set_ylabel(r'Pressure')
 
 
 for i,results in enumerate(resultsPickle):
-    results['Primitive']["Mach"] = results['Fluid'].ComputeMach_u_p_rho(results['Primitive']["Velocity"], results['Primitive']["Pressure"], results['Primitive']["Density"])
+    results['Primitive']["Mach"] = results['Fluid'].computeMach_u_p_rho(results['Primitive']["Velocity"], results['Primitive']["Pressure"], results['Primitive']["Density"])
     ax[1,1].plot(results['X Coords'][1:-1], results['Primitive']["Mach"][1:-1, -1], label=labels[i])
 ax[1, 1].set_ylabel(r'Mach')
 

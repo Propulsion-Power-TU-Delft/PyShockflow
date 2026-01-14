@@ -21,7 +21,7 @@ class RiemannProblem:
         self.nt = len(self.t)
         self.gmma = 1.4
 
-    def InitializeState(self, inState):
+    def initializeState(self, inState):
         """
         Initialize the left and right states
         :param inState: array with values (density left, density right, velocity left, velocity right, pressure left,
@@ -33,21 +33,21 @@ class RiemannProblem:
         self.uR = inState[3]
         self.pL = inState[4]
         self.pR = inState[5]
-        self.eL = self.ComputeEnergy_pRho(self.pL, self.rhoL)
-        self.eR = self.ComputeEnergy_pRho(self.pR, self.rhoR)
+        self.eL = self.computeEnergy_pRho(self.pL, self.rhoL)
+        self.eR = self.computeEnergy_pRho(self.pR, self.rhoR)
         self.aL = np.sqrt(self.gmma * self.pL / self.rhoL)
         self.aR = np.sqrt(self.gmma * self.pR / self.rhoR)
 
-    def ComputeEnergy_pRho(self, p, rho):
+    def computeEnergy_pRho(self, p, rho):
         """
-        Compute energy for an ideal gas given pressure and density
+        compute energy for an ideal gas given pressure and density
         :param p: pressure
         :param rho: density
         :return: energy
         """
         return p / (self.gmma - 1) / rho
 
-    def InitializeSolutionArrays(self):
+    def initializeSolutionArrays(self):
         """
         Initialize the containers for the solution
         :return:
@@ -60,12 +60,12 @@ class RiemannProblem:
         self.p = np.zeros((nx, nt))
         self.e = np.zeros((nx, nt))
 
-        self.rho[:, 0] = self.CopyInitialState(self.rhoL, self.rhoR)
-        self.u[:, 0] = self.CopyInitialState(self.uL, self.uR)
-        self.p[:, 0] = self.CopyInitialState(self.pL, self.pR)
-        self.e[:, 0] = self.CopyInitialState(self.eL, self.eR)
+        self.rho[:, 0] = self.copyInitialState(self.rhoL, self.rhoR)
+        self.u[:, 0] = self.copyInitialState(self.uL, self.uR)
+        self.p[:, 0] = self.copyInitialState(self.pL, self.pR)
+        self.e[:, 0] = self.copyInitialState(self.eL, self.eR)
 
-    def CopyInitialState(self, fL, fR):
+    def copyInitialState(self, fL, fR):
         """
         Given left and right values, copy these values along the x-axis
         :param fL:
@@ -81,7 +81,7 @@ class RiemannProblem:
                 f[i] = fR
         return f
 
-    def PlotSolution(self, iTime, folder_name = None, file_name = None):
+    def plotSolution(self, iTime, folder_name = None, file_name = None):
         """
         Plot the solution at time instant element iTime
         :param iTime: element index in time array
@@ -114,13 +114,13 @@ class RiemannProblem:
             plt.savefig(folder_name + '/' + file_name + '.pdf', bbox_inches='tight')
 
 
-    def ComputeStarRegion(self):
+    def computeStarRegion(self):
         """
         Given left and right states, compute the star pressure and velocity values.
         :return:
         """
-        self.pStar = self.FindpStar()[0]
-        fL, fR = self.Compute_fL_fR(self.pStar)
+        self.pStar = self.computeStarPressure()[0]
+        fL, fR = self.compute_fL_fR(self.pStar)
         self.uStar = 0.5 * (self.uL + self.uR) + 0.5 * (fR - fL)
 
         # right wave
@@ -139,7 +139,7 @@ class RiemannProblem:
             # print('The left wave is a rarefaction wave')
             self.left_wave = 'rarefaction'
 
-    def Solve(self, space_domain='global', time_domain='global'):
+    def solve(self, space_domain='global', time_domain='global'):
         """
         Sample the solution in the x,t domains. Follows methodology given in the book Riemann solvers by Toro.
         :return:
@@ -195,7 +195,7 @@ class RiemannProblem:
                                 self.p[ix, it] = self.pStar
                                 self.e[ix, it] = self.pStar / (self.gmma - 1) / rhoStarL
                             else:  # we are inside the rarefaction wave
-                                self.rho[ix, it], self.u[ix, it], self.p[ix, it], self.e[ix, it] = self.WfanLeft(S)
+                                self.rho[ix, it], self.u[ix, it], self.p[ix, it], self.e[ix, it] = self.computeLeftFanQuantities(S)
                 else:  # we are at the right of the discontinuity
                     if self.pStar > self.pR:  # the right wave is a shock wave
                         rhoStarR = self.rhoR * ((self.pStar / self.pR) + (self.gmma - 1) / (self.gmma + 1)) / (
@@ -229,9 +229,9 @@ class RiemannProblem:
                                 self.p[ix, it] = self.pStar
                                 self.e[ix, it] = self.pStar / (self.gmma - 1) / rhoStarR
                             else:  # we are inside the rarefaction wave
-                                self.rho[ix, it], self.u[ix, it], self.p[ix, it], self.e[ix, it] = self.WfanRight(S)
+                                self.rho[ix, it], self.u[ix, it], self.p[ix, it], self.e[ix, it] = self.computeRightFanQuantities(S)
 
-    def WfanLeft(self, S):
+    def computeLeftFanQuantities(self, S):
         """
         Function values for left rarefaction fan
         :param S: similarity parameter (=x/t)
@@ -245,7 +245,7 @@ class RiemannProblem:
         e = p / (self.gmma - 1) / rho
         return rho, u, p, e
 
-    def WfanRight(self, S):
+    def computeRightFanQuantities(self, S):
         """
         Function values for right rarefaction fan
         :param S: similarity parameter (=x/t)
@@ -259,9 +259,9 @@ class RiemannProblem:
         e = p / (self.gmma - 1) / rho
         return rho, u, p, e
 
-    def Compute_fL_fR(self, p):
+    def compute_fL_fR(self, p):
         """
-        Compute the functions needed to evaluate p*
+        compute the functions needed to evaluate p*
         :param p: pressure value
         :return: value of the function (to find zero of)
         """
@@ -282,14 +282,14 @@ class RiemannProblem:
             fR = 2 * ar / (self.gmma - 1) * ((p / self.pR) ** ((self.gmma - 1) / 2 / self.gmma) - 1)
         return fL, fR
 
-    def FindpStar(self):
+    def computeStarPressure(self):
         """
         Find p* value making use of fsolve
         :return: p*
         """
         def pFunc(p):
             dU = self.uR - self.uL
-            fL, fR = self.Compute_fL_fR(p)
+            fL, fR = self.compute_fL_fR(p)
             return fL + fR + dU
 
         # guess initial value of pstar. This seems like working for every test-case
@@ -300,7 +300,7 @@ class RiemannProblem:
         pSol = fsolve(pFunc, pGuess)
         return pSol
 
-    def ShowAnimation(self):
+    def showAnimation(self):
         """
         Show animation of the results for all time instants
         """
@@ -329,7 +329,7 @@ class RiemannProblem:
                     col.grid(alpha=.3)
             plt.pause(1e-3)
     
-    def PlotLocalSolEvolution(self):
+    def plotLocalSolEvolution(self):
         """
         Plot the values in time of all the points specified in self.ix_values, defined when solving the Riemann problem
         """
@@ -356,7 +356,7 @@ class RiemannProblem:
                     col.grid(alpha=.3)
     
 
-    def GetSolutionInTime(self):
+    def getSolutionInTime(self):
         """
         Return the arrays storing the solutions in time
         """
@@ -365,7 +365,7 @@ class RiemannProblem:
         p = self.p[self.ix_values, :].flatten()
         return rho, u, p
     
-    def GetSolutionInSpace(self):
+    def getSolutionInSpace(self):
         """
         Return the arrays storing the solutions in space
         """
@@ -375,7 +375,7 @@ class RiemannProblem:
         return rho, u, p
 
 
-    def DrawSpaceTimePlot(self, folder_name = None, file_name = None):
+    def drawSpaceTimePlot(self, folder_name = None, file_name = None):
         """
         Just draw the sketch of the space-time plot showing the characters of the waves
         """
@@ -434,7 +434,7 @@ class RiemannProblem:
             os.makedirs(folder_name, exist_ok=True)
             plt.savefig(folder_name + '/' + file_name + '_wave_struct.pdf', bbox_inches='tight')
     
-    def SaveSolution(self, folder_name, file_name):
+    def saveSolution(self, folder_name, file_name):
         """
         Save the full object
         """

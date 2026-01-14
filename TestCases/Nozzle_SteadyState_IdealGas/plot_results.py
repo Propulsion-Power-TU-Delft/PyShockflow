@@ -40,11 +40,11 @@ for i, pickleFile in enumerate(pickleList):
     density = solution['Primitive']["Density"][1:-1,-1]
     pressure = solution['Primitive']["Pressure"][1:-1,-1]
     velocity = solution['Primitive']["Velocity"][1:-1,-1]
-    mach = solution['Fluid'].ComputeMach_u_p_rho(velocity, pressure, density)
-    entropy = solution['Fluid'].ComputeEntropy_p_rho(pressure, density)
-    totalPressure = solution['Fluid'].ComputeTotalPressure_p_M(pressure, mach)
-    temperature = solution['Fluid'].ComputeTemperature_p_rho(pressure, density)
-    totalTemperature = solution['Fluid'].ComputeTotalTemperature_T_M(temperature, mach)
+    mach = solution['Fluid'].computeMach_u_p_rho(velocity, pressure, density)
+    entropy = solution['Fluid'].computeEntropy_p_rho(pressure, density)
+    totalPressure = solution['Fluid'].computeTotalPressure_p_M(pressure, mach)
+    temperature = solution['Fluid'].computeTemperature_p_rho(pressure, density)
+    totalTemperature = solution['Fluid'].computeTotalTemperature_T_M(temperature, mach)
     
     
     ax1.plot(xCoords, mach, label=r'$p_{out}=%i$ kPa' %(pressureList[i]))

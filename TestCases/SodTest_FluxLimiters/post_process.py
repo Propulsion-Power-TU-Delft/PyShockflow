@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
-from PyShockflow.riemann_problem import RiemannProblem
-from PyShockflow.shock_tube import ShockTube
+from pyshockflow import RiemannProblem
+from pyshockflow import ShockTube
 import os
 
 

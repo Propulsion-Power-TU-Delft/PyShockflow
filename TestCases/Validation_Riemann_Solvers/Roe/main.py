@@ -6,4 +6,4 @@ inputFiles = ['input_Test%i.ini' % i for i in testNumbers]
 for inputFile in inputFiles:
     config = Config(inputFile)
     tube = ShockTube(config)
-    tube.SolveSystem()
+    tube.solve()

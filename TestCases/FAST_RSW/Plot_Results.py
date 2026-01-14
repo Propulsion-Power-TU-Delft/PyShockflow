@@ -1,8 +1,8 @@
-from PyShockflow.shock_tube import ShockTube
+from pyshockflow import ShockTube
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
-# from PyShockflow.styles import *
+# from pyshockflow.styles import *
 from scipy.optimize import fsolve
 from scipy.optimize import brentq
 

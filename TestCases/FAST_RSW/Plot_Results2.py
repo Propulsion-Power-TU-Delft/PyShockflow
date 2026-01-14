@@ -1,4 +1,4 @@
-from PyShockflow.shock_tube import ShockTube
+from pyshockflow import ShockTube
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle

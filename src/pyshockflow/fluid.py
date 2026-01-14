@@ -13,73 +13,73 @@ class FluidIdeal():
         self.gmma = gmma
         self.Rgas = Rgas
     
-    def ComputeStaticEnergy_p_rho(self, p, rho):
+    def computeStaticEnergy_p_rho(self, p, rho):
         return (p / (self.gmma - 1) / rho)
     
-    def ComputePressure_rho_e(self, rho, e):
+    def computePressure_rho_e(self, rho, e):
         return (self.gmma-1)*rho*e
     
-    def ComputeSoundSpeed_p_rho(self, p, rho):
+    def computeSoundSpeed_p_rho(self, p, rho):
         return np.sqrt(self.gmma*p/rho)
     
-    def ComputeMach_u_p_rho(self, u, p, rho):
-        soundSpeed = self.ComputeSoundSpeed_p_rho(p, rho)
+    def computeMach_u_p_rho(self, u, p, rho):
+        soundSpeed = self.computeSoundSpeed_p_rho(p, rho)
         return np.abs(u)/soundSpeed
 
-    def ComputeTemperature_p_rho(self, p, rho):
+    def computeTemperature_p_rho(self, p, rho):
         return (p/rho)/self.Rgas
-    
-    def ComputeDensity_p_T(self, p, T):
+
+    def computeDensity_p_T(self, p, T):
         return p/self.Rgas/T
 
-    def ComputeEntropy_p_rho(self, p, rho):
+    def computeEntropy_p_rho(self, p, rho):
         return p/(rho**self.gmma)
 
-    def ComputeFunDerGamma_p_rho(self, p, rho):
+    def computeFunDerGamma_p_rho(self, p, rho):
         if isinstance(p, np.ndarray): # handle the case when the inputs are arrays
             return 0.5*(self.gmma+1)+np.zeros_like(p)
         else:
             return 0.5*(self.gmma+1)
 
-    def ComputeComprFactorZ_p_rho(self, p, rho):
+    def computeComprFactorZ_p_rho(self, p, rho):
         if isinstance(p, np.ndarray):
             return 1+np.zeros_like(p)
         else:
             return 1
-    
-    def ComputeTotalPressure_p_M(self, p, M):
+
+    def computeTotalPressure_p_M(self, p, M):
         return p*(1+(self.gmma-1)/2*M**2)**(self.gmma/(self.gmma-1))
-    
-    def ComputeMach_pt_p(self, pt, p):
+
+    def computeMach_pt_p(self, pt, p):
         mach = np.sqrt( 2/(self.gmma-1) * ((pt/p)**((self.gmma-1)/self.gmma)-1) )
         return mach
-    
-    def ComputeTotalTemperature_T_M(self, T, M):
+
+    def computeTotalTemperature_T_M(self, T, M):
         return T*(1+(self.gmma-1)/2*M**2)
-    
-    def ComputeTemperature_Tt_M(self, Tt, M):
+
+    def computeTemperature_Tt_M(self, Tt, M):
         return Tt/(1+(self.gmma-1)/2*M**2)
-    
-    def ComputePressure_Pt_M(self, Pt, M):
+
+    def computePressure_Pt_M(self, Pt, M):
         return Pt/((1+(self.gmma-1)/2*M**2)**(self.gmma/(self.gmma-1)))
     
-    def ComputeInletQuantities(self, pressure, totPressure, totTemperature, direction):
-        mach = self.ComputeMach_pt_p(totPressure, pressure)
-        temperature = self.ComputeTemperature_Tt_M(totTemperature, mach)
-        density = self.ComputeDensity_p_T(pressure, temperature)
-        soundSpeed = self.ComputeSoundSpeed_p_rho(pressure, density)
+    def computeInletQuantities(self, pressure, totPressure, totTemperature, direction):
+        mach = self.computeMach_pt_p(totPressure, pressure)
+        temperature = self.computeTemperature_Tt_M(totTemperature, mach)
+        density = self.computeDensity_p_T(pressure, temperature)
+        soundSpeed = self.computeSoundSpeed_p_rho(pressure, density)
         velocity = mach*soundSpeed*direction
-        energy = self.ComputeStaticEnergy_p_rho(pressure, density)
+        energy = self.computeStaticEnergy_p_rho(pressure, density)
         return density, velocity, energy
 
-    def Compute_gammapv_p_rho(self, p, rho):
+    def compute_gammapv_p_rho(self, p, rho):
         if isinstance(p, np.ndarray):
             gmma_pv = np.zeros_like(p)+self.gmma
         else:
             gmma_pv = self.gmma
         return gmma_pv
-    
-    def ComputeChiKappa_VinokurScheme_p_rho(self, p, rho):
+
+    def computeChiKappa_VinokurScheme_p_rho(self, p, rho):
         chi = 0
         kappa = self.gmma-1
         return chi, kappa
@@ -94,21 +94,21 @@ class FluidReal():
         self.fluid_library = fluid_library
         self.fluid = FP.fluid(fluid_library, fluid_name, print_error=print_error)
 
-    def ComputeStaticEnergy_p_rho(self, p, rho):
+    def computeStaticEnergy_p_rho(self, p, rho):
         e = FP.PropsSI('U', 'P', p, 'D', rho, self.fluid)
         return e
     
-    def ComputePressure_rho_e(self, rho, e):
+    def computePressure_rho_e(self, rho, e):
         p = FP.PropsSI('P', 'D', rho, 'U', e, self.fluid)
         return p
-    
-    def ComputeSoundSpeed_p_rho(self, p, rho):
+
+    def computeSoundSpeed_p_rho(self, p, rho):
         try:
             a = FP.PropsSI("A", "P", p, "D", rho, self.fluid)
             return a
         except:
             # two phase region (or close) 
-            T = self.ComputeTemperature_p_rho(p, rho)
+            T = self.computeTemperature_p_rho(p, rho)
             try:
                 Q = FP.PropsSI("Q", "T", T, "P", p, self.fluid)
             except:
@@ -122,33 +122,33 @@ class FluidReal():
             # Calculate weighted speed of sound based on quality
             a = (1 - Q) * a_liquid + Q * a_vapor
             return a
-    
-    def ComputeMach_u_p_rho(self, u, p, rho):
-        soundSpeed = self.ComputeSoundSpeed_p_rho(p, rho)
+
+    def computeMach_u_p_rho(self, u, p, rho):
+        soundSpeed = self.computeSoundSpeed_p_rho(p, rho)
         return np.abs(u)/soundSpeed
-    
-    def ComputeTemperature_p_rho(self, p, rho):
+
+    def computeTemperature_p_rho(self, p, rho):
         T = FP.PropsSI('T', 'P', p, 'D', rho, self.fluid)
         return T
-    
-    def ComputeDensity_p_T(self, p, T):
+
+    def computeDensity_p_T(self, p, T):
         rho = FP.PropsSI('D', 'P', p, 'T', T, self.fluid)
         return rho
 
-    def ComputeEntropy_p_rho(self, p, rho):
+    def computeEntropy_p_rho(self, p, rho):
         s = FP.PropsSI('S', 'P', p, 'D', rho, self.fluid)
         return s
-    
-    def ComputeEntropy_p_T(self, p, T):
+
+    def computeEntropy_p_T(self, p, T):
         s = FP.PropsSI('S', 'P', p, 'T', T, self.fluid)
         return s
-    
-    def ComputeFunDerGamma_p_rho(self, p, rho):
+
+    def computeFunDerGamma_p_rho(self, p, rho):
         try: # if single phase this will work
             G = FP.PropsSI("FUNDAMENTAL_DERIVATIVE_OF_GAS_DYNAMICS", "P", p, "D", rho, self.fluid)
             return G
         except: # if close to two phase, we need to do like the speed of sound
-            T = self.ComputeTemperature_p_rho(p, rho)
+            T = self.computeTemperature_p_rho(p, rho)
             try:
                 Q = FP.PropsSI("Q", "T", T, "P", p, self.fluid)
             except:
@@ -162,13 +162,13 @@ class FluidReal():
             # Calculate weighted G based on quality
             G = (1 - Q) * G_liquid + Q * G_vapor
             return G
-        
-    def ComputeComprFactorZ_p_rho(self, p, rho):
+
+    def computeComprFactorZ_p_rho(self, p, rho):
         Z = FP.PropsSI('Z', 'P', p, 'D', rho, self.fluid)
         return Z
 
     
-    def ComputeInletQuantities(self, pressure, totPressure, totTemperature, direction):
+    def computeInletQuantities(self, pressure, totPressure, totTemperature, direction):
         """The full state must be reconstructed from the quantities given in the arguments.
         The entropy of the static and total state must be the same by definition. This is used to find the temperature.
 
@@ -178,47 +178,47 @@ class FluidReal():
             totTemperature (float): total temperature
         """
         def compute_function_residual(temperatureGuess):
-            entropyStatic = self.ComputeEntropy_p_T(pressure, temperatureGuess)
-            entropyTotal = self.ComputeEntropy_p_T(totPressure, totTemperature)
+            entropyStatic = self.computeEntropy_p_T(pressure, temperatureGuess)
+            entropyTotal = self.computeEntropy_p_T(totPressure, totTemperature)
             residual = entropyStatic - entropyTotal
             return residual
 
         temperature = fsolve(compute_function_residual, totTemperature)[0]
-        density = self.ComputeDensity_p_T(pressure, temperature)
-        gamma_pv = self.Compute_gammapv_p_rho(pressure, density)
-        mach = self.ComputeMach_pt_p_gammapv(totPressure, pressure, gamma_pv)
-        soundSpeed = self.ComputeSoundSpeed_p_rho(pressure, density)
+        density = self.computeDensity_p_T(pressure, temperature)
+        gamma_pv = self.compute_gammapv_p_rho(pressure, density)
+        mach = self.computeMach_pt_p_gammapv(totPressure, pressure, gamma_pv)
+        soundSpeed = self.computeSoundSpeed_p_rho(pressure, density)
         velocity = direction * mach * soundSpeed
-        energy = self.ComputeStaticEnergy_p_rho(pressure, density)
+        energy = self.computeStaticEnergy_p_rho(pressure, density)
         return density, velocity, energy
-    
-    
-    def Compute_gammapv_p_rho(self, p, rho):
+
+
+    def compute_gammapv_p_rho(self, p, rho):
         cp = FP.PropsSI("Cpmass", "P", p, "D", rho, self.fluid)
         cv = FP.PropsSI("Cvmass", "P", p, "D", rho, self.fluid)
         dp_drho_T = FP.PropsSI("d(P)/d(D)|T", "P", p, "D", rho, self.fluid)
         dp_dv_T = - rho**2 * dp_drho_T
         gmma_pv = -1/(p*rho) * cp/cv * dp_dv_T
         return gmma_pv
-    
-    
-    def Compute_gammapt_p_T(self, p, T):
+
+
+    def compute_gammapt_p_T(self, p, T):
         rho = FP.PropsSI("D", "P", p, "T", T, self.fluid)
         d_rho_dT_P = FP.PropsSI("d(D)/d(T)|P", "P", p, "T", T, self.fluid)
         dv_dT_P = - d_rho_dT_P / (rho**2)
         cp = FP.PropsSI("Cpmass", "P", p, "T", T, self.fluid)
         gamma_pT = 1 / (1 - p/cp*dv_dT_P)
         return gamma_pT
-    
-    
-    def ComputeMach_pt_p_gammapv(self, pt, p, gamma_pv):
+
+
+    def computeMach_pt_p_gammapv(self, pt, p, gamma_pv):
         """Reference to equation 8.10 Nederstigt MS thesis
         """
         mach = np.sqrt(2/(gamma_pv-1) * ((pt/p)**((gamma_pv-1)/gamma_pv) - 1))
         return mach
     
 
-    def ComputeChiKappa_VinokurScheme_p_rho(self, p, rho):
+    def computeChiKappa_VinokurScheme_p_rho(self, p, rho):
         e = FP.PropsSI("U", "P", p, "D", rho, self.fluid)
         dp_drho_econst = FP.PropsSI("d(P)/d(D)|U", "P", p, "D", rho, self.fluid)
         dp_de_rhoconst = FP.PropsSI("d(P)/d(U)|D", "P", p, "D", rho, self.fluid)

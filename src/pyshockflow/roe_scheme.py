@@ -22,17 +22,17 @@ class RoeScheme_Base:
         self.fluid = fluid
         if isinstance(fluid, FluidIdeal):
             self.gmma = fluid.gmma
-        self.eL = fluid.ComputeStaticEnergy_p_rho(pL, rhoL)
-        self.eR = fluid.ComputeStaticEnergy_p_rho(pR, rhoR)
-        self.htL = self.ComputeTotalEnthalpy(rhoL, uL, pL, self.eL)
-        self.htR = self.ComputeTotalEnthalpy(rhoR, uR, pR, self.eR)
-        self.u1L, self.u2L, self.u3L = GetConservativesFromPrimitives(rhoL, uL, pL, self.fluid)
-        self.u1R, self.u2R, self.u3R = GetConservativesFromPrimitives(rhoR, uR, pR, self.fluid)
-        self.aL = self.fluid.ComputeSoundSpeed_p_rho(self.pL, self.rhoL)
-        self.aR = self.fluid.ComputeSoundSpeed_p_rho(self.pR, self.rhoR)
+        self.eL = fluid.computeStaticEnergy_p_rho(pL, rhoL)
+        self.eR = fluid.computeStaticEnergy_p_rho(pR, rhoR)
+        self.htL = self.computeTotalEnthalpy(rhoL, uL, pL, self.eL)
+        self.htR = self.computeTotalEnthalpy(rhoR, uR, pR, self.eR)
+        self.u1L, self.u2L, self.u3L = getConservativesFromPrimitives(rhoL, uL, pL, self.fluid)
+        self.u1R, self.u2R, self.u3R = getConservativesFromPrimitives(rhoR, uR, pR, self.fluid)
+        self.aL = self.fluid.computeSoundSpeed_p_rho(self.pL, self.rhoL)
+        self.aR = self.fluid.computeSoundSpeed_p_rho(self.pR, self.rhoR)
 
 
-    def RoeAVG(self, fL, fR):
+    def computeRoeAvg(self, fL, fR):
         """
         Roe Averaging Operator
         """
@@ -40,34 +40,34 @@ class RoeScheme_Base:
         return favg
 
     
-    def ComputeAveragedVariables(self):
+    def computeAveragedVariables(self):
         """
-        Compute the Roe averaged variables for the 1D Euler equations
+        compute the Roe averaged variables for the 1D Euler equations
         """
         self.rhoAVG = sqrt(self.rhoL*self.rhoR)
-        self.uAVG = self.RoeAVG(self.uL, self.uR)
-        self.hAVG = self.RoeAVG(self.htL, self.htR)
+        self.uAVG = self.computeRoeAvg(self.uL, self.uR)
+        self.hAVG = self.computeRoeAvg(self.htL, self.htR)
         self.aAVG = sqrt((self.gmma-1)*(self.hAVG-0.5*self.uAVG**2))
     
     
-    def ComputeTotalEnthalpy(self, rho, u, p, e):
+    def computeTotalEnthalpy(self, rho, u, p, e):
         et = 0.5*u**2 + e
         ht = et+p/rho
         return ht
     
 
-    def ComputeAveragedEigenvalues(self):
+    def computeAveragedEigenvalues(self):
         """
-        Compute eigenvalues of the averaged Jacobian
+        compute eigenvalues of the averaged Jacobian
         """
         self.lambda_vec = np.array([self.uAVG-self.aAVG, 
                                     self.uAVG, 
                                     self.uAVG+self.aAVG])
     
 
-    def ComputeAveragedEigenvectors(self):
+    def computeAveragedEigenvectors(self):
         """
-        Compute eigenvector matrix of the averaged flux Jacobian
+        compute eigenvector matrix of the averaged flux Jacobian
         """
         self.eigenvector_mat = np.zeros((3, 3))
         
@@ -84,7 +84,7 @@ class RoeScheme_Base:
         self.eigenvector_mat[2, 2] = self.hAVG+self.uAVG*self.aAVG
     
 
-    def ComputeWaveStrengths(self):
+    def computeWaveStrengths(self):
         """
         Characteristic jumps due to initial conditions
         """
@@ -94,14 +94,14 @@ class RoeScheme_Base:
         self.alphas[2] = 1/2/self.aAVG**2*(self.pR-self.pL + self.rhoAVG*self.aAVG*(self.uR-self.uL))
         
 
-    def ComputeFlux(self, entropyFixActive, fixCoefficient):
+    def computeFlux(self, entropyFixActive, fixCoefficient):
         """
-        Compute the Roe flux. The flux is computed for 1D problems.
+        compute the Roe flux. The flux is computed for 1D problems.
         """
-        self.ComputeAveragedVariables()
-        self.ComputeAveragedEigenvalues()
-        self.ComputeAveragedEigenvectors()
-        self.ComputeWaveStrengths()
+        self.computeAveragedVariables()
+        self.computeAveragedEigenvalues()
+        self.computeAveragedEigenvectors()
+        self.computeWaveStrengths()
         
         fluxL = self.EulerFlux(self.u1L, self.u2L, self.u3L)
         fluxR = self.EulerFlux(self.u1R, self.u2R, self.u3R)
@@ -111,7 +111,7 @@ class RoeScheme_Base:
         if entropyFixActive==False:
             absEig = np.abs(self.lambda_vec)
         else:
-            absEig = entropy_fix_hartenhyman(self.lambda_vec, self.aAVG, fixCoefficient)
+            absEig = applyEntropyFix(self.lambda_vec, self.aAVG, fixCoefficient)
 
         for iDim in range(3):
             for jVec in range(3):
@@ -123,7 +123,7 @@ class RoeScheme_Base:
         """
         Get the Euler flux starting from conservative variables. 
         """
-        flux1D = EulerFluxFromConservatives(u1, u2, u3, self.fluid)
+        flux1D = computeAdvectionFluxFromConservatives(u1, u2, u3, self.fluid)
         return flux1D
 
 
@@ -140,37 +140,37 @@ class RoeScheme_Generalized_Arabi(RoeScheme_Base):
         self.deltaRho = (self.rhoR - self.rhoL)
     
     
-    def ComputeAveragedVariables(self):
+    def computeAveragedVariables(self):
         """
-        Compute the Roe averaged variables for the 1D Euler equations
+        compute the Roe averaged variables for the 1D Euler equations
         """
         self.rhoAVG = sqrt(self.rhoL*self.rhoR)
-        self.uAVG = self.RoeAVG(self.uL, self.uR)
-        self.hAVG = self.RoeAVG(self.htL, self.htR)
-        self.aAVG = self.RoeAVG(self.aL, self.aR)
+        self.uAVG = self.computeRoeAvg(self.uL, self.uR)
+        self.hAVG = self.computeRoeAvg(self.htL, self.htR)
+        self.aAVG = self.computeRoeAvg(self.aL, self.aR)
 
 
-    def ComputeWaveStrengths(self):
+    def computeWaveStrengths(self):
         self.alphas = np.zeros(3)
         self.alphas[0] = 1/2/self.aAVG**2*(self.deltaP+self.rhoAVG*self.aAVG*self.deltaU)
         self.alphas[1] = 1/2/self.aAVG**2*(self.deltaP-self.rhoAVG*self.aAVG*self.deltaU)
         self.alphas[2] = self.deltaRho-self.deltaP/self.aAVG**2
     
 
-    def ComputeAveragedEigenvalues(self):
+    def computeAveragedEigenvalues(self):
         self.lambda_vec = np.array([self.uAVG+self.aAVG, 
                                     self.uAVG-self.aAVG,
                                     self.uAVG])
     
 
-    def ComputeFlux(self, entropyFixActive, fixCoefficient):
+    def computeFlux(self, entropyFixActive, fixCoefficient):
         """
         Assemble the global flux, average + dissipation, following the approach of the article
         """
-        self.ComputeAveragedVariables()
-        self.ComputeAveragedEigenvalues()
-        self.ComputeAveragedEigenvectors()
-        self.ComputeWaveStrengths()
+        self.computeAveragedVariables()
+        self.computeAveragedEigenvalues()
+        self.computeAveragedEigenvectors()
+        self.computeWaveStrengths()
         
         fluxL = self.EulerFlux(self.u1L, self.u2L, self.u3L)
         fluxR = self.EulerFlux(self.u1R, self.u2R, self.u3R)
@@ -179,7 +179,7 @@ class RoeScheme_Generalized_Arabi(RoeScheme_Base):
         if entropyFixActive==False:
             absEig = np.abs(self.lambda_vec)
         else:
-            absEig = entropy_fix_hartenhyman(self.lambda_vec, self.aAVG, fixCoefficient)
+            absEig = applyEntropyFix(self.lambda_vec, self.aAVG, fixCoefficient)
 
         deltaF = np.zeros(3)
         deltaF[0] = absEig[0]*self.alphas[0] + absEig[1]*self.alphas[1] + absEig[2]*self.alphas[2]
@@ -215,9 +215,9 @@ class RoeScheme_Generalized_Vinokur(RoeScheme_Base):
         self.deltaRho = (self.rhoR - self.rhoL)
     
     
-    def ComputeAveragedVariables(self):
+    def computeAveragedVariables(self):
         """
-        Compute the Roe averaged state following the approach described in the articleof Vinokur
+        compute the Roe averaged state following the approach described in the articleof Vinokur
         """
         alpha = np.sqrt(self.rhoL) / (np.sqrt(self.rhoL)+np.sqrt(self.rhoR))
         self.uAVG = alpha*self.uL + (1-alpha)*self.uR
@@ -228,17 +228,17 @@ class RoeScheme_Generalized_Vinokur(RoeScheme_Base):
         
         # compute mean initial guess state
         p_mean = 0.5*(self.pL+self.pR)
-        eL = self.fluid.ComputeStaticEnergy_p_rho(self.pL, self.rhoL)
+        eL = self.fluid.computeStaticEnergy_p_rho(self.pL, self.rhoL)
         rho_mean = 0.5*(self.rhoL+self.rhoR)
         rhoeL = self.rhoL*eL
-        eR = self.fluid.ComputeStaticEnergy_p_rho(self.pR, self.rhoR)
+        eR = self.fluid.computeStaticEnergy_p_rho(self.pR, self.rhoR)
         rhoeR = self.rhoR*eR
         rhoe_mean = 0.5*(rhoeL+rhoeR)
         e_mean = rhoe_mean/rho_mean
         
-        chiL, kappaL = self.fluid.ComputeChiKappa_VinokurScheme_p_rho(self.pL, self.rhoL)
-        chiR, kappaR = self.fluid.ComputeChiKappa_VinokurScheme_p_rho(self.pR, self.rhoR)
-        chiM, kappaM = self.fluid.ComputeChiKappa_VinokurScheme_p_rho(p_mean, rho_mean)
+        chiL, kappaL = self.fluid.computeChiKappa_VinokurScheme_p_rho(self.pL, self.rhoL)
+        chiR, kappaR = self.fluid.computeChiKappa_VinokurScheme_p_rho(self.pR, self.rhoR)
+        chiM, kappaM = self.fluid.computeChiKappa_VinokurScheme_p_rho(p_mean, rho_mean)
         chiHat = (chiL + chiR + 4.0*chiM) / 6.0
         kappaHat = (kappaL + kappaR + 4.0*kappaM) / 6.0
         delta_rhoe = (rhoeR - rhoeL)
@@ -265,9 +265,9 @@ class RoeScheme_Generalized_Vinokur(RoeScheme_Base):
         self.aAVG = np.sqrt(self.chiAVG + self.kappaAVG*self.hAVG)
     
     
-    def ComputeFlux(self, entropyFixActive, fixCoefficient):
+    def computeFlux(self, entropyFixActive, fixCoefficient):
         """
-        Compute the global flux, average + dissipation
+        compute the global flux, average + dissipation
         """
         fluxL = self.EulerFlux(self.u1L, self.u2L, self.u3L)
         fluxR = self.EulerFlux(self.u1R, self.u2R, self.u3R)
@@ -291,7 +291,7 @@ class RoeScheme_Generalized_Vinokur(RoeScheme_Base):
         if entropyFixActive==False:
             absEig = np.abs(eigsAVG)
         else:
-            absEig = entropy_fix_hartenhyman(eigsAVG, self.aAVG, fixCoefficient)
+            absEig = applyEntropyFix(eigsAVG, self.aAVG, fixCoefficient)
         
         # eigenvalues matrix
         matrixLambda = np.diag(absEig)
@@ -303,7 +303,7 @@ class RoeScheme_Generalized_Vinokur(RoeScheme_Base):
         return fluxRoe
         
 
-def entropy_fix_hartenhyman(eigs, aAVG, kappa):
+def applyEntropyFix(eigs, aAVG, kappa):
     """
     Apply Harten entropy fix to eigenvalues.
     

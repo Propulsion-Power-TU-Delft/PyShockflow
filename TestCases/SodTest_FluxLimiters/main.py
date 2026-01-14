@@ -8,4 +8,4 @@ inputList = ['input_%s.ini' %(name) for name in nameList]
 for input in inputList:
     config = Config(input)
     tube = ShockTube(config)
-    tube.SolveSystem()
+    tube.solve()

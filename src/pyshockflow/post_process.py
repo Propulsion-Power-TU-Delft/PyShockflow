@@ -78,7 +78,7 @@ class PostProcess():
         print(f"Read the file: {filepath}/{inputFile}")
     
     
-    def ShowAnimation(self, jumpInstants=250):
+    def showAnimation(self, jumpInstants=250):
         """
         Show animation of the results at all time instants
         """
@@ -98,11 +98,11 @@ class PostProcess():
         
         # compute mach number
         if isinstance(self.fluid, FluidIdeal):
-            mach = self.fluid.ComputeMach_u_p_rho(self.solution['Velocity'], self.solution['Pressure'], self.solution['Density'])
+            mach = self.fluid.computeMach_u_p_rho(self.solution['Velocity'], self.solution['Pressure'], self.solution['Density'])
         elif isinstance(self.fluid, FluidReal):
             mach = np.zeros((ni, nt))
             for i in range(ni):
-                mach[i, :] = self.fluid.ComputeMach_u_p_rho(self.solution['Velocity'][i, :], self.solution['Pressure'][i, :], self.solution['Density'][i, :])
+                mach[i, :] = self.fluid.computeMach_u_p_rho(self.solution['Velocity'][i, :], self.solution['Pressure'][i, :], self.solution['Density'][i, :])
         else:
             raise ValueError('Unknown fluid type')
         mach_limits = plot_limits(mach)

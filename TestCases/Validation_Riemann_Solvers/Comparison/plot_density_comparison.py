@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 import os
-from PyShockflow.riemann_problem import RiemannProblem
-from PyShockflow.styles import *
+from pyshockflow import RiemannProblem
+from pyshockflow import *
 
 testNumber = [1,3,4,5]
 markerSize = 4
