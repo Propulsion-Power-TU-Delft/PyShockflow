@@ -3,25 +3,25 @@ import matplotlib.pyplot as plt
 import pickle
 from pyshockflow.styles import *
 
-points = [500] 
+points = [100] 
 inputFiles = ['Results/rocket_NX_%i/Results.pik' %(_) for _ in points]
 
 # # OPENING TRANSIENT PRESSURE DISTRIBUTION
-# plt.figure()
-# for ii, inputFile in enumerate(inputFiles):
-#     with open(inputFile, 'rb') as file:
-#         result = pickle.load(file)
+plt.figure()
+for ii, inputFile in enumerate(inputFiles):
+    with open(inputFile, 'rb') as file:
+        result = pickle.load(file)
     
-#     time = result['Time']
-#     nTimes = len(time)*0.00377/time[-1]
-#     iTimes = np.linspace(0, nTimes-1, 10, dtype=int)
+    time = result['Time']
+    nTimes = len(time)*0.00377/time[-1]
+    iTimes = np.linspace(0, nTimes-1, 10, dtype=int)
     
-#     for it in range(len(iTimes)):
-#         plt.plot(result['X Coords'][1:-2], result['Primitive']['Pressure'][1:-2,iTimes[it]]/1e5, label='t/T=%.2f' %(iTimes[it]/iTimes[-1]))
-# plt.legend()
-# plt.xlabel(r'$x \ \rm{[m]}$')
-# plt.ylabel(r'$p \ \rm{[bar]}$')
-# plt.grid(alpha=.3)
+    for it in range(len(iTimes)):
+        plt.plot(result['X Coords'][1:-2], result['Primitive']['Pressure'][1:-2,iTimes[it]]/1e5, label='t/T=%.2f' %(iTimes[it]/iTimes[-1]))
+plt.legend()
+plt.xlabel(r'$x \ \rm{[m]}$')
+plt.ylabel(r'$p \ \rm{[bar]}$')
+plt.grid(alpha=.3)
 
 # PRESSURE SENSORS IN TIME
 plt.figure()

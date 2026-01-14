@@ -11,7 +11,6 @@ from pyshockflow.post_process import PostProcess
 from pyshockflow.euler_functions import *
 
 
-
 class ShockTube:
     def __init__(self, config):
         """
@@ -27,19 +26,19 @@ class ShockTube:
         """
         self.config = config
         self.topology = self.config.getTopology()
-        self.fluid_name = self.config.getFluidName()
-        self.fluid_model = self.config.getFluidModel()
+        self.fluidName = self.config.getFluidName()
+        self.fluidModel = self.config.getFluidModel()
         
-        if self.fluid_model.lower()=='ideal':
+        if self.fluidModel.lower()=='ideal':
             self.gmma = self.config.getFluidGamma()
             self.Rgas = self.config.getGasRConstant()
             self.fluid = FluidIdeal(self.gmma,self.Rgas)
-        elif self.fluid_model.lower()=='real':
-            fluid_library = self.config.getFluidLibrary()
+        elif self.fluidModel.lower()=='real':
+            fluidLibrary = self.config.getFluidLibrary()
             tmp = ['RefProp', 'CoolProp', 'StanMix', 'PCP-SAFT']
-            if fluid_library not in tmp:
-                raise ValueError(f"Invalid fluid library: {fluid_library}. Must be one of {tmp}")
-            self.fluid = FluidReal(self.fluid_name, fluid_library, False)
+            if fluidLibrary not in tmp:
+                raise ValueError(f"Invalid fluid library: {fluidLibrary}. Must be one of {tmp}")
+            self.fluid = FluidReal(self.fluidName, fluidLibrary, False)
         
         # fluid initial states
         self.pressureLeft = self.config.getPressureLeft()
@@ -65,7 +64,6 @@ class ShockTube:
         self.length = self.config.getLength()
         self.nNodes = self.config.getNumberOfPoints()
         xNodes = self.generatePhysicalGeometry(self.length, self.nNodes)
-        self.nNodes = len(xNodes)
         self.generateVirtualGeometry(xNodes)
         self.prepareOutputPaths()
         
@@ -74,9 +72,9 @@ class ShockTube:
         self.timeMax = self.config.getTimeMax()
         
         # Boundary Conditions
-        self.BCtype = self.config.getBoundaryConditions()    
-        print("Boundary Conditions Left:                    %s" %self.BCtype[0])
-        print("Boundary Conditions Right:                   %s" %self.BCtype[1])
+        self.boundaryType = self.config.getBoundaryConditions()    
+        print("Boundary Conditions Left:                    %s" %self.boundaryType[0])
+        print("Boundary Conditions Right:                   %s" %self.boundaryType[1])
         print("="*80)
         
         # Print info
@@ -90,19 +88,21 @@ class ShockTube:
         print("Length of the domain [m]:                    %.6e" % self.length)
         print("Number of points:                            %i" % self.nNodes)
         print("Final time instant [s]:                      %.6e" % self.timeMax)
-        print("Fluid name:                                  %s" % self.fluid_name)
-        print("Fluid treatment:                             %s" % self.fluid_model)
-        if self.fluid_model.lower()=='ideal':
+        print("Fluid name:                                  %s" % self.fluidName)
+        print("Fluid treatment:                             %s" % self.fluidModel)
+        if self.fluidModel.lower()=='ideal':
             print("Fluid cp/cv ratio [-]:                       %.6e" %self.gmma)
             print("Fluid gas constant [J/kgK]:                  %.6e" %self.Rgas)
         
-        self.instantiateSolutionArrays()
-        self.instantiateSolutionArraysConservatives()
+        self.instantiatePrimitiveArrays()
+        self.instantiateConservativeArrays()
+        
         restartFile = self.config.getRestartFile()
         if restartFile is not None:
             self.initializeFromRestartFile(restartFile)
         else:
             self.imposeInitialConditions()
+        
         self.setBoundaryConditions()
     
     
@@ -124,8 +124,8 @@ class ShockTube:
                 
 
     def generatePhysicalGeometry(self, length, nodes):
-        meshRefined = self.config.isMeshRefined()
-        if meshRefined is False:
+        isMeshRefined = self.config.isMeshRefined()
+        if isMeshRefined is False:
             xNodes = np.linspace(0, length, nodes)
         else:
             refinementCoords = self.config.getRefinementBoundaries()
@@ -165,7 +165,9 @@ class ShockTube:
             
             else:
                 raise ValueError('The refinement is ill-positioned. Please locate it internally to the domain, or at one of the extremities')
-                
+            
+            self.nNodes = len(xNodes)
+        
         return xNodes  
     
     
@@ -217,43 +219,43 @@ class ShockTube:
         """
         self.xNodes = xNodes
         self.nNodesHalo = self.nNodes+2
-        self.xNodesVirt = np.zeros(self.nNodesHalo)
-        self.xNodesVirt[1:-1] = self.xNodes
-        self.xNodesVirt[0] = self.xNodes[0] - (xNodes[1]-xNodes[0])
-        self.xNodesVirt[-1] = self.xNodes[-1] + (xNodes[-1]-xNodes[-2])
+        self.xNodesVirtual = np.zeros(self.nNodesHalo)
+        self.xNodesVirtual[1:-1] = self.xNodes
+        self.xNodesVirtual[0] = self.xNodes[0] - (xNodes[1]-xNodes[0])
+        self.xNodesVirtual[-1] = self.xNodes[-1] + (xNodes[-1]-xNodes[-2])
         self.areaReference = self.config.getAreaReference()
-        self.dx = self.computeGridSpacing(self.xNodesVirt)
+        self.dx = self.computeGridSpacing(self.xNodesVirtual)
         
         if self.topology.lower()=='default':
             print("The simulation proceeds with default topology: constant area")
-            self.areaTube = np.zeros_like(self.xNodesVirt)+self.areaReference
+            self.areaTube = np.zeros_like(self.xNodesVirtual)+self.areaReference
         elif self.topology.lower()=='nozzle':
             print(f"The simulation topology is: nozzle. Reading the coordinates from the nozzle file {self.config.getNozzleFilePath()}")
-            self.areaTube = self.readNozzleFile(self.xNodesVirt, self.config.getNozzleFilePath())
+            self.areaTube = self.readNozzleFile(self.xNodesVirtual, self.config.getNozzleFilePath())
         else:
             raise ValueError('Unknown topology type')
         
-        self.dAreaTude_dx = np.gradient(self.areaTube, self.xNodesVirt)
+        self.dAreaTude_dx = np.gradient(self.areaTube, self.xNodesVirtual)
         
         
-    def instantiateSolutionArrays(self):
+    def instantiatePrimitiveArrays(self):
         """
         Instantiate the containers for the solutions. The first dimension is space, the second is time.
         """
         self.solutionNames = ['Density', 'Velocity', 'Pressure', 'Energy']
-        self.solution = {}
+        self.solutionPrimitive = {}
         for name in self.solutionNames:
-            self.solution[name] = np.zeros(self.nNodesHalo)
+            self.solutionPrimitive[name] = np.zeros(self.nNodesHalo)
 
 
-    def instantiateSolutionArraysConservatives(self):
+    def instantiateConservativeArrays(self):
         """
         Instantiate the containers for the solutions. The first dimension is space, the second is time.
         """
         self.solutionConsNames = ['u1', 'u2', 'u3']
-        self.solutionCons = {}
+        self.solutionConservative = {}
         for name in self.solutionConsNames:
-            self.solutionCons[name] = np.zeros(self.nNodesHalo)
+            self.solutionConservative[name] = np.zeros(self.nNodesHalo)
         
 
     def imposeInitialConditions(self):
@@ -266,7 +268,7 @@ class ShockTube:
                              'Energy': np.array([self.energyLeft, self.energyRight])}
         
         for name in self.solutionNames:
-            self.solution[name] = self.copyInitialState(initialConditions[name][0], initialConditions[name][1])
+            self.solutionPrimitive[name] = self.copyInitialState(initialConditions[name][0], initialConditions[name][1])
         
         print(f"Initial L/R density values [kg/m3]:          ({self.densityLeft:.6e}, {self.densityRight:.6e})")
         print(f"Initial L/R velocity values [m/s]:           ({self.velocityLeft:.6e}, {self.velocityRight:.6e})")
@@ -280,10 +282,10 @@ class ShockTube:
             restartData = pickle.load(file)
                 
         for name in ['Density', 'Velocity', 'Pressure']:
-            self.solution[name] = np.interp(self.xNodesVirt, restartData['X Coords'], restartData['Primitive'][name][:,-1])
+            self.solutionPrimitive[name] = np.interp(self.xNodesVirtual, restartData['X Coords'], restartData['Primitive'][name][:,-1])
         
-        for i in range(self.solution['Energy'].shape[0]):
-            self.solution['Energy'][i] = self.fluid.computeStaticEnergy_p_rho(self.solution['Pressure'][i], self.solution['Density'][i])
+        for i in range(self.solutionPrimitive['Energy'].shape[0]):
+            self.solutionPrimitive['Energy'][i] = self.fluid.computeStaticEnergy_p_rho(self.solutionPrimitive['Pressure'][i], self.solutionPrimitive['Density'][i])
             
     
 
@@ -293,22 +295,22 @@ class ShockTube:
         """
         dictIn['Energy'] = dictIn['Pressure'] / (self.gmma - 1) / dictIn['Density']
         for name in self.solutionNames:
-            self.solution[name][:, 1:-1] = dictIn[name]
+            self.solutionPrimitive[name][:, 1:-1] = dictIn[name]
     
     
     def plotGridGeometry(self, trueAspectRatio=True, pointsToJump=1, save_filename=None):
         """Plot the grid geometry. 1D tube, with thickness equal to the diameter of the tube
         """
         diameter = np.sqrt(4*self.areaTube/np.pi)
-        yLower = np.zeros_like(self.xNodesVirt)-diameter/2
+        yLower = np.zeros_like(self.xNodesVirtual)-diameter/2
         yUpper = diameter/2
         
         plt.figure()
-        plt.plot(self.xNodesVirt, yLower, 'k')
-        plt.plot(self.xNodesVirt, yUpper, 'k')
+        plt.plot(self.xNodesVirtual, yLower, 'k')
+        plt.plot(self.xNodesVirtual, yUpper, 'k')
         nPointsPic = 10
         for i in range(0, len(diameter), pointsToJump):
-            plt.plot(np.zeros(nPointsPic)+self.xNodesVirt[i], np.linspace(yLower[i], yUpper[i], nPointsPic), '-k', lw=0.5)
+            plt.plot(np.zeros(nPointsPic)+self.xNodesVirtual[i], np.linspace(yLower[i], yUpper[i], nPointsPic), '-k', lw=0.5)
         plt.xlabel(r'$x \ \rm{[m]}$')
         plt.ylabel(r'$r \ \rm{[m]}$')
         
@@ -331,9 +333,9 @@ class ShockTube:
         assert(xInterface>0), f"The interface must be located within 0 and {self.length}"
         assert(xInterface<self.length), f"The interface must be located within 0 and {self.length}"
         
-        f = np.zeros_like(self.xNodesVirt)
-        for i in range(len(self.xNodesVirt)):
-            if self.xNodesVirt[i] <= xInterface:
+        f = np.zeros_like(self.xNodesVirtual)
+        for i in range(len(self.xNodesVirtual)):
+            if self.xNodesVirtual[i] <= xInterface:
                 f[i] = fL
             else:
                 f[i] = fR
@@ -343,35 +345,35 @@ class ShockTube:
         """
         Set the correct boundary condition type (`reflective`, `transparent`, or `periodic`)
         """
-        if self.BCtype[0].lower()=='reflective':
+        if self.boundaryType[0].lower()=='reflective':
             self.setReflectiveBoundaryConditions('left')
-        elif self.BCtype[0].lower()=='transparent':
+        elif self.boundaryType[0].lower()=='transparent':
             self.setTransparentBoundaryConditions('left')
-        elif self.BCtype[0].lower()=='periodic':
+        elif self.boundaryType[0].lower()=='periodic':
             self.setPeriodicBoundaryConditions('left')
-        elif self.BCtype[0].lower()=='inlet':
+        elif self.boundaryType[0].lower()=='inlet':
             self.setInletBoundaryConditions('left')
-        elif self.BCtype[0].lower()=='outlet':
+        elif self.boundaryType[0].lower()=='outlet':
             self.setOutletBoundaryConditions('left')
         else:
             raise ValueError("Unknown boundary condition type on the left")
         
-        if self.BCtype[1].lower()=='reflective':
+        if self.boundaryType[1].lower()=='reflective':
             self.setReflectiveBoundaryConditions('right')
-        elif self.BCtype[1].lower()=='transparent':
+        elif self.boundaryType[1].lower()=='transparent':
             self.setTransparentBoundaryConditions('right')
-        elif self.BCtype[1].lower()=='periodic':
+        elif self.boundaryType[1].lower()=='periodic':
             self.setPeriodicBoundaryConditions('right')
-        elif self.BCtype[1].lower()=='outlet':
+        elif self.boundaryType[1].lower()=='outlet':
             self.setOutletBoundaryConditions('right')
-        elif self.BCtype[1].lower()=='inlet':
+        elif self.boundaryType[1].lower()=='inlet':
             self.setInletBoundaryConditions('right')
         else:
             raise ValueError("Unknown boundary condition type on the right")
         
         # update also the conservative variable arrays based on what has been done on the primitive
-        self.solutionCons['u1'], self.solutionCons['u2'], self.solutionCons['u3'] = (getConservativesFromPrimitives(
-            self.solution['Density'], self.solution['Velocity'], self.solution['Pressure'], self.fluid))
+        self.solutionConservative['u1'], self.solutionConservative['u2'], self.solutionConservative['u3'] = (getConservativesFromPrimitives(
+            self.solutionPrimitive['Density'], self.solutionPrimitive['Velocity'], self.solutionPrimitive['Pressure'], self.fluid))
 
 
     def setReflectiveBoundaryConditions(self, location):
@@ -379,15 +381,15 @@ class ShockTube:
         Set reflective BC
         """
         if location=='left':
-            self.solution['Density'][0] = self.solution['Density'][1]
-            self.solution['Velocity'][0] = -self.solution['Velocity'][1]
-            self.solution['Pressure'][0] = self.solution['Pressure'][1]
-            self.solution['Energy'][0] = self.solution['Energy'][1]
+            self.solutionPrimitive['Density'][0] = self.solutionPrimitive['Density'][1]
+            self.solutionPrimitive['Velocity'][0] = -self.solutionPrimitive['Velocity'][1]
+            self.solutionPrimitive['Pressure'][0] = self.solutionPrimitive['Pressure'][1]
+            self.solutionPrimitive['Energy'][0] = self.solutionPrimitive['Energy'][1]
         elif location=='right':
-            self.solution['Density'][-1] = self.solution['Density'][-2]
-            self.solution['Velocity'][-1] = -self.solution['Velocity'][-2]
-            self.solution['Pressure'][-1] = self.solution['Pressure'][-2]
-            self.solution['Energy'][-1] = self.solution['Energy'][-2]
+            self.solutionPrimitive['Density'][-1] = self.solutionPrimitive['Density'][-2]
+            self.solutionPrimitive['Velocity'][-1] = -self.solutionPrimitive['Velocity'][-2]
+            self.solutionPrimitive['Pressure'][-1] = self.solutionPrimitive['Pressure'][-2]
+            self.solutionPrimitive['Energy'][-1] = self.solutionPrimitive['Energy'][-2]
         else:
             raise ValueError('Unknown location specified')
             
@@ -398,15 +400,15 @@ class ShockTube:
         Set transparent BC
         """
         if location=='left':
-            self.solution['Density'][0] = self.solution['Density'][1]
-            self.solution['Velocity'][0] = self.solution['Velocity'][1]
-            self.solution['Pressure'][0] = self.solution['Pressure'][1]
-            self.solution['Energy'][0] = self.solution['Energy'][1]
+            self.solutionPrimitive['Density'][0] = self.solutionPrimitive['Density'][1]
+            self.solutionPrimitive['Velocity'][0] = self.solutionPrimitive['Velocity'][1]
+            self.solutionPrimitive['Pressure'][0] = self.solutionPrimitive['Pressure'][1]
+            self.solutionPrimitive['Energy'][0] = self.solutionPrimitive['Energy'][1]
         elif location=='right':
-            self.solution['Density'][-1] = self.solution['Density'][-2]
-            self.solution['Velocity'][-1] = self.solution['Velocity'][-2]
-            self.solution['Pressure'][-1] = self.solution['Pressure'][-2]
-            self.solution['Energy'][-1] = self.solution['Energy'][-2]
+            self.solutionPrimitive['Density'][-1] = self.solutionPrimitive['Density'][-2]
+            self.solutionPrimitive['Velocity'][-1] = self.solutionPrimitive['Velocity'][-2]
+            self.solutionPrimitive['Pressure'][-1] = self.solutionPrimitive['Pressure'][-2]
+            self.solutionPrimitive['Energy'][-1] = self.solutionPrimitive['Energy'][-2]
         else:
             raise ValueError('Unknown location specified')
         
@@ -417,15 +419,15 @@ class ShockTube:
         Set periodic BC
         """
         if location=='left':
-            self.solution['Density'][0] = self.solution['Density'][-2]
-            self.solution['Velocity'][0] = self.solution['Velocity'][-2]
-            self.solution['Pressure'][0] = self.solution['Pressure'][-2]
-            self.solution['Energy'][0] = self.solution['Energy'][-2]
+            self.solutionPrimitive['Density'][0] = self.solutionPrimitive['Density'][-2]
+            self.solutionPrimitive['Velocity'][0] = self.solutionPrimitive['Velocity'][-2]
+            self.solutionPrimitive['Pressure'][0] = self.solutionPrimitive['Pressure'][-2]
+            self.solutionPrimitive['Energy'][0] = self.solutionPrimitive['Energy'][-2]
         elif location=='right':
-            self.solution['Density'][-1] = self.solution['Density'][1]
-            self.solution['Velocity'][-1] = self.solution['Velocity'][1]
-            self.solution['Pressure'][-1] = self.solution['Pressure'][1]
-            self.solution['Energy'][-1] = self.solution['Energy'][1]
+            self.solutionPrimitive['Density'][-1] = self.solutionPrimitive['Density'][1]
+            self.solutionPrimitive['Velocity'][-1] = self.solutionPrimitive['Velocity'][1]
+            self.solutionPrimitive['Pressure'][-1] = self.solutionPrimitive['Pressure'][1]
+            self.solutionPrimitive['Energy'][-1] = self.solutionPrimitive['Energy'][1]
         else:
             raise ValueError('Unknown location specified')
     
@@ -450,14 +452,14 @@ class ShockTube:
         direction = inletConditions[2]
         
         # static pressure is the only info taken from the domain
-        pressure = self.solution['Pressure'][iInternal]
+        pressure = self.solutionPrimitive['Pressure'][iInternal]
         if pressure>=totalPressure: # avoid the problems that can cause
             pressure = 0.99*totalPressure   
         density, velocity, energy = self.fluid.computeInletQuantities(pressure, totalPressure, totalTemperature, direction)
-        self.solution['Density'][iHalo] = density
-        self.solution['Velocity'][iHalo] = velocity
-        self.solution['Pressure'][iHalo] = pressure
-        self.solution['Energy'][iHalo] = energy
+        self.solutionPrimitive['Density'][iHalo] = density
+        self.solutionPrimitive['Velocity'][iHalo] = velocity
+        self.solutionPrimitive['Pressure'][iHalo] = pressure
+        self.solutionPrimitive['Energy'][iHalo] = energy
     
     
     def setOutletBoundaryConditions(self, location):
@@ -474,16 +476,16 @@ class ShockTube:
         else:
             raise ValueError('Unknown location specified')
             
-        machOutlet = self.fluid.computeMach_u_p_rho(self.solution['Velocity'][iInternal], self.solution['Pressure'][iInternal], self.solution['Density'][iInternal])        
+        machOutlet = self.fluid.computeMach_u_p_rho(self.solutionPrimitive['Velocity'][iInternal], self.solutionPrimitive['Pressure'][iInternal], self.solutionPrimitive['Density'][iInternal])        
         if machOutlet<1:
             pressure = self.config.getOutletConditions() # the pressure is the information taken from outside
-            velocity = self.solution['Velocity'][iInternal]
-            density = self.solution['Density'][iInternal]
+            velocity = self.solutionPrimitive['Velocity'][iInternal]
+            density = self.solutionPrimitive['Density'][iInternal]
             energy = self.fluid.computeStaticEnergy_p_rho(pressure, density)        
-            self.solution['Density'][iHalo] = density
-            self.solution['Velocity'][iHalo] = velocity
-            self.solution['Pressure'][iHalo] = pressure
-            self.solution['Energy'][iHalo] = energy
+            self.solutionPrimitive['Density'][iHalo] = density
+            self.solutionPrimitive['Velocity'][iHalo] = velocity
+            self.solutionPrimitive['Pressure'][iHalo] = pressure
+            self.solutionPrimitive['Energy'][iHalo] = energy
         else:            
             self.setTransparentBoundaryConditions(location) # the boundary is equivalent to a transparent condition
             
@@ -492,19 +494,20 @@ class ShockTube:
 
     def solve(self):
         """
-        Solve the equations explicitly in time (forward Euler) using a certain flux_method (`Godunov`, `Roe`, `WAF`). high_order
+        Solve the equations explicitly in time (forward Euler) using a certain advectionScheme (`Godunov`, `Roe`, `WAF`). high_order
         specifies if applying or not high order reconstruction with limiters. At the moment only type one is working -> simply
         impose high_order=True
         """
         self.entropyFixActive = self.config.isEntropyFixActive()
         self.entropyFixCoefficient = self.config.getEntropyFixCoefficient()
-        flux_method = self.config.getNumericalScheme()
+        advectionScheme = self.config.getNumericalScheme()
         high_order = self.config.getMUSCLReconstruction()
+        simulationType = self.config.getSimulationType()
         
         print()
         print("="*80)
         print(" "*33 + "START SOLVER")
-        print("Numerical flux method: %s" %(flux_method))
+        print("Numerical flux method: %s" %(advectionScheme))
         print("MUSCL reconstruction: %s" %high_order)
         print("Entropy fix active: %s" %self.entropyFixActive)
         if self.config.getFluidModel()=='real':
@@ -517,7 +520,7 @@ class ShockTube:
         print()
 
         # short aliases
-        primitiveOld = self.solution.copy()
+        primitiveOld = self.solutionPrimitive.copy()
         
         # write the initial time to a solution file
         self.writeSolution(it=0, time=0)
@@ -533,35 +536,25 @@ class ShockTube:
             newTime = time + dt
             
             residuals = self.computeResiduals(primitiveOld, dt)
+            self.updateSolution(residuals)
             
-            self.updateConservativeSolution(residuals)
-            
-            self.updatePrimitivesFromConservatives()
-            
-            if self.config.getSimulationType()=='unsteady':
+            if simulationType=='steady':
+                self.printInfoResiduals(iTime, newTime, residuals)        
+            else:
                 print(f"Iteration: {iTime}, Progress in Time {((newTime)/self.timeMax * 100):.3f} %")
-            if self.config.getSimulationType()=='steady':
-                self.printInfoResiduals(iTime, newTime, residuals)
             
-            # check everything is ok
             self.checkSimulationStatus(dt)
-            
-            # set boundary conditions to update the ghost points for the new iteration
             self.setBoundaryConditions()
-            
-            # write the current time to a solution file
             self.writeSolution(iTime, newTime)
             
-            # update the time and iteration counter
             time += dt  
             iTime += 1
                 
             
         print(" "*34 + "END SOLVER")
         print("="*80)
-        
         print(" "*25 + "FINAL ASSEMBLY OF THE RESULTS")
-        solution = PostProcess(self.subFolder)
+        output = PostProcess(self.subFolder)
         print(" "*34 + "END ASSEMBLER")
         print("="*80)
     
@@ -573,13 +566,13 @@ class ShockTube:
         if limiter not in availableLimiters:
             raise ValueError(f'Limiter not recognized! Available ones are: {availableLimiters}')
         
-        flux_method = self.config.getNumericalScheme()
+        advectionScheme = self.config.getNumericalScheme()
         MUSCL = self.config.getMUSCLReconstruction()
         
         # compute advection fluxes on every internal interface
         flux = np.zeros((self.nNodes+1, 3))
         for iFace in range(flux.shape[0]):
-            flux[iFace, :] = self.computeFluxVector(iFace, iFace+1, primitives, dt, flux_method, MUSCL, limiter)
+            flux[iFace, :] = self.computeFluxVector(iFace, iFace+1, primitives, dt, advectionScheme, MUSCL, limiter)
         
         # compute the source terms
         if self.topology.lower()=='nozzle':
@@ -594,19 +587,17 @@ class ShockTube:
         return residuals
 
     
-    def updateConservativeSolution(self, residuals):
-        self.solutionCons['u1'][1:-1] += residuals[:,0]
-        self.solutionCons['u2'][1:-1] += residuals[:,1]
-        self.solutionCons['u3'][1:-1] += residuals[:,2]
-    
+    def updateSolution(self, residuals):
+        self.solutionConservative['u1'][1:-1] += residuals[:,0]
+        self.solutionConservative['u2'][1:-1] += residuals[:,1]
+        self.solutionConservative['u3'][1:-1] += residuals[:,2]
+        self.updatePrimitivesFromConservatives()
     
     def updatePrimitivesFromConservatives(self):
-        self.solution['Density'][1:-1], self.solution['Velocity'][1:-1], self.solution['Pressure'][1:-1], self.solution['Energy'][1:-1] = \
-                getPrimitivesFromConservatives(self.solutionCons['u1'][1:-1], self.solutionCons['u2'][1:-1], self.solutionCons['u3'][1:-1], self.fluid)
+        self.solutionPrimitive['Density'][1:-1], self.solutionPrimitive['Velocity'][1:-1], self.solutionPrimitive['Pressure'][1:-1], self.solutionPrimitive['Energy'][1:-1] = \
+                getPrimitivesFromConservatives(self.solutionConservative['u1'][1:-1], self.solutionConservative['u2'][1:-1], self.solutionConservative['u3'][1:-1], self.fluid)
         
-        
-    
-    
+
     def computeTimeStep(self, primitive):
         velocity = primitive['Velocity'][1:-1]
         speedOfSound = np.zeros_like(velocity)
@@ -617,15 +608,15 @@ class ShockTube:
     
     
     def writeSolution(self, it, time):        
-        full_path = self.subFolder + '/' + 'step_%06i.pik' %(it)
+        fullPath = self.subFolder + '/' + 'step_%06i.pik' %(it)
         outputResults = {'Time': time, 
                          'Iteration Counter': it, 
-                         'X Coords': self.xNodesVirt,
+                         'X Coords': self.xNodesVirtual,
                          'Area Tube': self.areaTube,
-                         'Primitive': self.solution, 
+                         'Primitive': self.solutionPrimitive, 
                          'Fluid': self.fluid,
                          'Configuration': self.config}
-        with open(full_path, 'wb') as file:
+        with open(fullPath, 'wb') as file:
             pickle.dump(outputResults, file)
     
     
@@ -650,26 +641,26 @@ class ShockTube:
             np.ndarray: source terms arrays (nPoints, 3)
         """
         totalEnergy = primitive['Energy'][:] + 0.5*primitive['Velocity']**2
-        source_terms = np.zeros((self.nNodesHalo,3))
-        source_terms[:,0] = - primitive['Density'] * primitive['Velocity']*self.dAreaTude_dx/self.areaTube
-        source_terms[:,1] = - (primitive['Density'] * primitive['Velocity']**2)*self.dAreaTude_dx/self.areaTube
-        source_terms[:,2] = - primitive['Velocity'] *(primitive['Density']*totalEnergy + primitive['Pressure'])*self.dAreaTude_dx/self.areaTube
-        return source_terms
+        source = np.zeros((self.nNodesHalo,3))
+        source[:,0] = - primitive['Density'] * primitive['Velocity']*self.dAreaTude_dx/self.areaTube
+        source[:,1] = - (primitive['Density'] * primitive['Velocity']**2)*self.dAreaTude_dx/self.areaTube
+        source[:,2] = - primitive['Velocity'] *(primitive['Density']*totalEnergy + primitive['Pressure'])*self.dAreaTude_dx/self.areaTube
+        return source
     
     
     def checkSimulationStatus(self, dt):
         """
         Check if nans or infs are detected and in that case stop the simulation and provide explanation
         """
-        if np.any(np.isnan(self.solution['Density'])) or np.any(np.isinf(self.solution['Density'])) or \
-            np.any(np.isnan(self.solution['Pressure'])) or np.any(np.isinf(self.solution['Pressure'])):
+        if np.any(np.isnan(self.solutionPrimitive['Density'])) or np.any(np.isinf(self.solutionPrimitive['Density'])) or \
+            np.any(np.isnan(self.solutionPrimitive['Pressure'])) or np.any(np.isinf(self.solutionPrimitive['Pressure'])):
             print()
             print()
             print("######################  SIMULATION DIVERGED ############################")
             print('NaNs detected in density. Simulation stopped.')
             cfl = self.computeMaxCFL(dt) # use the previous time step to compute where the solution had CFL related problems
             print("Maximum CFL number found: %.3f" %(np.max(cfl)))
-            print("At location x: %.3f [m]" %(self.xNodesVirt[np.argmax(cfl)]))
+            print("At location x: %.3f [m]" %(self.xNodesVirtual[np.argmax(cfl)]))
             print("Visualize the plot to understand critical locations, and decrease CFL_MAX input setting.")
             print("###############################  EXIT ##################################")
             print()
@@ -684,9 +675,9 @@ class ShockTube:
     
     
     def computeMaxCFL(self, dt):
-        pressure = self.solution['Pressure'][1:-1]
-        density = self.solution['Density'][1:-1]
-        velocity = self.solution['Velocity'][1:-1]
+        pressure = self.solutionPrimitive['Pressure'][1:-1]
+        density = self.solutionPrimitive['Density'][1:-1]
+        velocity = self.solutionPrimitive['Velocity'][1:-1]
         dx = self.dx[1:-1]
         soundSpeed = np.zeros_like(pressure)
         for i in range(len(soundSpeed)):
@@ -695,9 +686,9 @@ class ShockTube:
         return cfl
         
 
-    def computeFluxVector(self, il, ir, primitive, dt, flux_method, MUSCL, limiter):
+    def computeFluxVector(self, il, ir, primitive, dt, advectionScheme, MUSCL, limiter):
         """
-        compute the flux vector at the interface between grid points `il` and `ir`, using a certain `flux_method`.
+        compute the flux vector at the interface between grid points `il` and `ir`, using a certain `advectionScheme`.
         """
         
         # flow reconstruction if high_order=True
@@ -712,8 +703,8 @@ class ShockTube:
             pR = primitive['Pressure'][ir]            
         
         # flux calculation
-        if flux_method.lower()=='godunov':
-            if self.fluid_model!='ideal':
+        if advectionScheme.lower()=='godunov':
+            if self.fluidModel!='ideal':
                 raise ValueError('Godunov scheme is available only for ideal gas model')
             else:
                 # Godunov flux calculation
@@ -729,19 +720,19 @@ class ShockTube:
                 u1, u2, u3 = getConservativesFromPrimitives(rho, u, p, self.fluid)
                 u1AVG, u2AVG, u3AVG = np.sum(u1)/len(u1), np.sum(u2)/len(u2), np.sum(u3)/len(u3)
                 flux = computeAdvectionFluxFromConservatives(u1AVG, u2AVG, u3AVG, self.fluid) 
-        elif flux_method.lower()=='roe':
-            if self.fluid_model=='real':
+        elif advectionScheme.lower()=='roe':
+            if self.fluidModel=='real':
                 raise ValueError('Basic Roe scheme is not available for real gas model. Select Roe_Arabi or Roe_Vinokur, depending on the Roe Avg procedure that you want.')
             else:
                 roe = RoeScheme_Base(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
                 flux = roe.computeFlux(entropyFixActive=self.entropyFixActive, fixCoefficient=self.entropyFixCoefficient)
-        elif flux_method.lower()=='roe_arabi':
-            if self.fluid_model=='ideal':
+        elif advectionScheme.lower()=='roe_arabi':
+            if self.fluidModel=='ideal':
                 raise ValueError('Roe_Arabi scheme is not available for ideal gas model. Select Standard Roe scheme.')
             else:
                 roe = RoeScheme_Generalized_Arabi(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
                 flux = roe.computeFlux(entropyFixActive=self.entropyFixActive, fixCoefficient=self.entropyFixCoefficient)
-        elif flux_method.lower()=='roe_vinokur':
+        elif advectionScheme.lower()=='roe_vinokur':
                 roe = RoeScheme_Generalized_Vinokur(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
                 roe.computeAveragedVariables()
                 flux = roe.computeFlux(entropyFixActive=self.entropyFixActive, fixCoefficient=self.entropyFixCoefficient)
@@ -755,10 +746,10 @@ class ShockTube:
         MUSCL reconstruction coupled with a certain limiter
         """
         # states left, left minus 1, right, right plus one
-        U_lm = np.array([self.solution['Density'][il-1], self.solution['Velocity'][il-1], self.solution['Pressure'][il-1]])
-        U_l = np.array([self.solution['Density'][il], self.solution['Velocity'][il], self.solution['Pressure'][il]])
-        U_r = np.array([self.solution['Density'][ir], self.solution['Velocity'][ir], self.solution['Pressure'][ir]])
-        U_rp = np.array([self.solution['Density'][ir+1], self.solution['Velocity'][ir+1], self.solution['Pressure'][ir+1]])
+        U_lm = np.array([self.solutionPrimitive['Density'][il-1], self.solutionPrimitive['Velocity'][il-1], self.solutionPrimitive['Pressure'][il-1]])
+        U_l = np.array([self.solutionPrimitive['Density'][il], self.solutionPrimitive['Velocity'][il], self.solutionPrimitive['Pressure'][il]])
+        U_r = np.array([self.solutionPrimitive['Density'][ir], self.solutionPrimitive['Velocity'][ir], self.solutionPrimitive['Pressure'][ir]])
+        U_rp = np.array([self.solutionPrimitive['Density'][ir+1], self.solutionPrimitive['Velocity'][ir+1], self.solutionPrimitive['Pressure'][ir+1]])
         
         dx_left_leftm = self.xNodes[il]-self.xNodes[il-1] # dx is always the same for now
         dx_right_left = self.xNodes[ir]-self.xNodes[il]
@@ -804,22 +795,22 @@ class ShockTube:
         """
         Save the array of fluid flow quantities (P,T,s,Mach,Gamma) from the solution to a CSV file.
         """
-        file_path = folder_name + '/' + file_name + '.dat'
+        filePath = folder_name + '/' + file_name + '.dat'
 
-        pressure_data = self.solution['Pressure'][iNode, :]  # Extract the pressure data (1D array)
-        density_data = self.solution['Density'][iNode, :]  # Extract the density data (1D array)
-        temperature_data = self.fluid.computeTemperature_p_rho(pressure_data, density_data)
-        entropy_data = self.fluid.computeEntropy_p_rho(pressure_data,density_data)
-        fundDerGasDynamics_data = self.fluid.computeFunDerGamma_p_rho(pressure_data,density_data)
-        compressibilityFactor_data = self.fluid.computeComprFactorZ_p_rho(pressure_data,density_data)
+        pressure = self.solutionPrimitive['Pressure'][iNode, :]  # Extract the pressure data (1D array)
+        density = self.solutionPrimitive['Density'][iNode, :]  # Extract the density data (1D array)
+        temperature = self.fluid.computeTemperature_p_rho(pressure, density)
+        entropy = self.fluid.computeEntropy_p_rho(pressure, density)
+        fundDerGasDynamics = self.fluid.computeFunDerGamma_p_rho(pressure, density)
+        compressibilityFactor = self.fluid.computeComprFactorZ_p_rho(pressure, density)
 
-        with open(file_path, 'w', newline='', encoding='utf-8') as file:
+        with open(filePath, 'w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
             for value in range(len(timeInstants)):
-                writer.writerow([timeInstants[value], pressure_data[value], temperature_data[value], density_data[value],
-                                 entropy_data[value], fundDerGasDynamics_data[value], compressibilityFactor_data[value]])
+                writer.writerow([timeInstants[value], pressure[value], temperature[value], density[value],
+                                 entropy[value], fundDerGasDynamics[value], compressibilityFactor[value]])
 
-        print(f"Fluid flow quantities (P,T,D,s,Gamma,Z) saved to {file_path}!")
+        print(f"Fluid flow quantities (P,T,D,s,Gamma,Z) saved to {filePath}!")
 
 
     def computeFluxLimiter(self, r_vec, limiter):
