@@ -36,7 +36,7 @@ for i in range(len(resultsFile)):
 fig, ax = plt.subplots(1, 3, figsize=(16, 4))
 
 # REFERENCE RESULTS
-with open('reference.pkl', 'rb') as file:
+with open('reference.pik', 'rb') as file:
     data = pickle.load(file)
 mach = data.u[:,-1]/(data.p[:,-1]*1.4/data.rho[:,-1])**0.5
 ax[0].plot(data.x+0.5, data.rho[:,-1], '-k', label='Reference', lw=1.7)

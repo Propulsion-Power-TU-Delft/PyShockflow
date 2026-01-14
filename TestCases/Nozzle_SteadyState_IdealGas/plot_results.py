@@ -1,10 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
-from PyShockflow.styles import *
+from pyshockflow.plot_styles import *
 from scipy.optimize import fsolve
 
-pressureList = [45, 75, 90, 94, 97]
+pressureList = [45, 75, 90, 94]
 pickleList = ['Results/outletPressure_%ikPa_NX_200/Results.pik' %pressure for pressure in pressureList]
 
 
