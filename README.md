@@ -29,13 +29,16 @@ conda activate pyshockflow
 python -m pip install -e .
 ```
 
-* Navigate to the test cases folder (or create one), and run the main.py file:
+* Navigate to the regression folder and run the automated tests:
+```bash
+./run_all.sh
+```
+this should print completed tests if everyting works correctly
+
+* The testcases folder has several cases, where input parameters are specified inside every `input.ini` file. To run a case:
 ```bash
 python main.py
 ```
-
-* The input parameters are specified inside every `input.ini` file, and should be quite easy to comprehend and modify. The content of input files
-can be taken from the testcases folder, or alternatively checking the Config.py class.
 
 
 

@@ -16,13 +16,8 @@ for dir in */ ; do
     # Remove trailing slash
     dir="${dir%/}"
     
+    echo " "
     echo "=== Running test in $dir ==="
-    
-    # Check if input.ini exists
-    if [[ ! -f "$dir/input.ini" ]]; then
-        echo "  input.ini not found, skipping."
-        continue
-    fi
     
     # Enter directory
     cd "$dir" || { echo "  Failed to enter $dir"; continue; }
