@@ -43,7 +43,7 @@ can be taken from the testcases folder, or alternatively checking the Config.py 
 * The code has been written for Mac OS systems, so there is the chance for some path-related commands to not run correctly
 on windows based machines. It should be quite easy to fix. With time the code will be made more universal.
 
-* The technical details can be found in the related article ...
+* The technical details can be found in the related article ... (soon to be submitted)
 
 
 ### Results Example ###
