@@ -5,13 +5,13 @@ import pickle
 import csv
 import sys
 from pyshockflow import RiemannProblem
-from pyshockflow import RoeScheme_Base, RoeScheme_Generalized_Arabi, RoeScheme_Generalized_Vinokur
+from pyshockflow import AdvectionRoeBase, AdvectionRoeArabi, AdvectionRoeVinokur
 from pyshockflow import FluidIdeal, FluidReal
-from pyshockflow.post_process import PostProcess
-from pyshockflow.euler_functions import *
+from pyshockflow.output import Output
+from pyshockflow.math_utils import *
 
 
-class ShockTube:
+class Driver:
     def __init__(self, config):
         """
         Initializes the problem with space and time arrays, along with additional fluid properties.
@@ -554,7 +554,7 @@ class ShockTube:
         print(" "*34 + "END SOLVER")
         print("="*80)
         print(" "*25 + "FINAL ASSEMBLY OF THE RESULTS")
-        output = PostProcess(self.subFolder)
+        output = Output(self.subFolder)
         print(" "*34 + "END ASSEMBLER")
         print("="*80)
     
@@ -724,16 +724,16 @@ class ShockTube:
             if self.fluidModel=='real':
                 raise ValueError('Basic Roe scheme is not available for real gas model. Select Roe_Arabi or Roe_Vinokur, depending on the Roe Avg procedure that you want.')
             else:
-                roe = RoeScheme_Base(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
+                roe = AdvectionRoeBase(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
                 flux = roe.computeFlux(entropyFixActive=self.entropyFixActive, fixCoefficient=self.entropyFixCoefficient)
         elif advectionScheme.lower()=='roe_arabi':
             if self.fluidModel=='ideal':
                 raise ValueError('Roe_Arabi scheme is not available for ideal gas model. Select Standard Roe scheme.')
             else:
-                roe = RoeScheme_Generalized_Arabi(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
+                roe = AdvectionRoeArabi(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
                 flux = roe.computeFlux(entropyFixActive=self.entropyFixActive, fixCoefficient=self.entropyFixCoefficient)
         elif advectionScheme.lower()=='roe_vinokur':
-                roe = RoeScheme_Generalized_Vinokur(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
+                roe = AdvectionRoeVinokur(rhoL, rhoR, uL, uR, pL, pR, self.fluid)
                 roe.computeAveragedVariables()
                 flux = roe.computeFlux(entropyFixActive=self.entropyFixActive, fixCoefficient=self.entropyFixCoefficient)
         else:

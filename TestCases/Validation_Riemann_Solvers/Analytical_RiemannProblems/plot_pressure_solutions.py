@@ -3,7 +3,7 @@ import numpy as np
 import pickle
 import os
 from pyshockflow import RiemannProblem
-from pyshockflow.styles import *
+from pyshockflow.plot_styles import *
 
 markers = ['-o', '-s', '-D', '-^', '-v']
 pointInterval = 2

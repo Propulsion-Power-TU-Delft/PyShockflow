@@ -6,7 +6,8 @@ import pickle
 import shutil
 from pyshockflow import FluidIdeal, FluidReal
 
-class PostProcess():
+class Output():
+    
     def __init__(self, filepath):
         files = [f for f in os.listdir(filepath) if os.path.isfile(os.path.join(filepath, f)) and 'pik' in f]
         files = sorted(files)

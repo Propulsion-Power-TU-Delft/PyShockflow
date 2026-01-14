@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
-from pyshockflow.styles import *
+from pyshockflow.plot_styles import *
 
 points = [100] 
 inputFiles = ['Results/rocket_NX_%i/Results.pik' %(_) for _ in points]

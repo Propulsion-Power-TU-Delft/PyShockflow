@@ -4,10 +4,10 @@ import os
 import pickle
 from numpy import sqrt
 from pyshockflow import FluidIdeal
-from pyshockflow.euler_functions import *
+from pyshockflow.math_utils import *
 
 
-class RoeScheme_Base:
+class AdvectionRoeBase:
     def __init__(self, rhoL, rhoR, uL, uR, pL, pR, fluid):
         """
         Roe scheme numerics for ideal gas. Parameters are left and right values of density, velocity and pressure, and the fluid object.
@@ -128,7 +128,7 @@ class RoeScheme_Base:
 
 
 
-class RoeScheme_Generalized_Arabi(RoeScheme_Base):
+class AdvectionRoeArabi(AdvectionRoeBase):
     """
     Generalised Roe Scheme for real gases, taken from the article 'A simple extension of Roe scheme for real gases', Arabi et al. 
     Journal of Computational Physics 2017. Formulation based on 1D problem.
@@ -202,7 +202,7 @@ class RoeScheme_Generalized_Arabi(RoeScheme_Base):
     
     
 
-class RoeScheme_Generalized_Vinokur(RoeScheme_Base):
+class AdvectionRoeVinokur(AdvectionRoeBase):
     """
     Generalised Roe Scheme for real gases, 
     where the Roe avg state is taken from the article 'Generalized flux-vector splitting and Roe average for an equilibrium real gas', Vinokur and Montagnè 

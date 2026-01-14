@@ -1,4 +1,4 @@
-from pyshockflow import ShockTube
+from pyshockflow import Driver
 from pyshockflow import Config
 
 inputFiles = [
@@ -10,5 +10,5 @@ inputFiles = [
 
 for inputFile in inputFiles:
     config = Config(inputFile)
-    tube = ShockTube(config)
+    tube = Driver(config)
     tube.solve()

@@ -1,4 +1,4 @@
-from pyshockflow import ShockTube
+from pyshockflow import Driver
 from pyshockflow import Config
 
 
@@ -7,5 +7,5 @@ inputList = ['input_%s.ini' %(name) for name in nameList]
 
 for input in inputList:
     config = Config(input)
-    tube = ShockTube(config)
+    tube = Driver(config)
     tube.solve()

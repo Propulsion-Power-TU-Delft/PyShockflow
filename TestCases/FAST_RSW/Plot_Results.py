@@ -1,4 +1,4 @@
-from pyshockflow import ShockTube
+from pyshockflow import Driver
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
