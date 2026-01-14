@@ -66,7 +66,8 @@ Roe's generalized scheme for real gas, with and without Entropy fix.
 ### Contribution guidelines ###
 
 * Validate the modifications by means of detailed test cases
-* Push the code
+* Ensure regression tests still work and extend them if needed
+* update input files and run scripts if needed
 
 ### Authors and contacts ###
 
