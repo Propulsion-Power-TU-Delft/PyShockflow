@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
 import os
 import pickle
-from PyShockflow.styles import *
+from pyshockflow.styles import *
 
 
 class RiemannProblem:

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import os
 import pickle
 import shutil
-from PyShockflow.fluid import FluidIdeal, FluidReal
+from pyshockflow import FluidIdeal, FluidReal
 
 class PostProcess():
     def __init__(self, filepath):
@@ -99,10 +99,12 @@ class PostProcess():
         # compute mach number
         if isinstance(self.fluid, FluidIdeal):
             mach = self.fluid.ComputeMach_u_p_rho(self.solution['Velocity'], self.solution['Pressure'], self.solution['Density'])
-        else:
+        elif isinstance(self.fluid, FluidReal):
             mach = np.zeros((ni, nt))
             for i in range(ni):
                 mach[i, :] = self.fluid.ComputeMach_u_p_rho(self.solution['Velocity'][i, :], self.solution['Pressure'][i, :], self.solution['Density'][i, :])
+        else:
+            raise ValueError('Unknown fluid type')
         mach_limits = plot_limits(mach)
         
         interval = jumpInstants

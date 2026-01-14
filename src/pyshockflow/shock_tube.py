@@ -4,11 +4,11 @@ import os
 import pickle
 import csv
 import sys
-from PyShockflow.riemann_problem import RiemannProblem
-from PyShockflow.roe_scheme import RoeScheme_Base, RoeScheme_Generalized_Arabi, RoeScheme_Generalized_Vinokur
-from PyShockflow.fluid import FluidIdeal, FluidReal
-from PyShockflow.post_process import PostProcess
-from PyShockflow.euler_functions import *
+from pyshockflow import RiemannProblem
+from pyshockflow import RoeScheme_Base, RoeScheme_Generalized_Arabi, RoeScheme_Generalized_Vinokur
+from pyshockflow import FluidIdeal, FluidReal
+from pyshockflow.post_process import PostProcess
+from pyshockflow.euler_functions import *
 
 
 

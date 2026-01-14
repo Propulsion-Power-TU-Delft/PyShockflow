@@ -14,20 +14,19 @@
 
 * Git clone the present folder in your system
 
-* Create a new python environment:
+* Go to the root folder and create a new python environment (pyshockflow) through toml file:
 ```bash
-conda create -n pyshockflow python=3.12
+conda env create -f environment.yml
 ```
 
-* Activate the new environment:
+* Activate the environment:
 ```bash
 conda activate pyshockflow
 ```
 
-* Navigate to the package and and install it on your machine:
+* Install the packages:
 ```bash
-cd pyshockflow
-pip install . -e
+python -m pip install -e .
 ```
 
 * Navigate to the test cases folder (or create one), and run the main.py file:

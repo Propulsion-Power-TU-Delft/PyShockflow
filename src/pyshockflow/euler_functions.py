@@ -1,5 +1,6 @@
-from PyShockflow.fluid import FluidIdeal
 import numpy as np
+from pyshockflow import FluidIdeal
+
 
 def GetPrimitivesFromConservatives(u1, u2, u3, fluid):
         """

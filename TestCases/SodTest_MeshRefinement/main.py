@@ -1,5 +1,5 @@
-from PyShockflow.shock_tube import ShockTube
-from PyShockflow.config import Config
+from pyshockflow import ShockTube
+from pyshockflow import Config
 
 ins = ['input_normal.ini', 'input_refined.ini']
 

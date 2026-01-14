@@ -61,6 +61,7 @@ build
 
 # Log files
 *.log
+*.json
 
 # Package files
 *.jar

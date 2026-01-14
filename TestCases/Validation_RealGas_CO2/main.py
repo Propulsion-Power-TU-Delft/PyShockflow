@@ -1,5 +1,5 @@
-from PyShockflow.shock_tube import ShockTube
-from PyShockflow.config import Config
+from pyshockflow import ShockTube
+from pyshockflow import Config
 
 config = Config('input_real_vinokur.ini')
 tube = ShockTube(config)

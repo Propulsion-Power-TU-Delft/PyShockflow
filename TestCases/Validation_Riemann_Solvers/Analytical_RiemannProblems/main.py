@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from PyShockflow.riemann_problem import RiemannProblem
+from pyshockflow import RiemannProblem
 
 
 # Page 129 of Riemann Solvers and numerical methods for fluid dynamics by Toro et al.
