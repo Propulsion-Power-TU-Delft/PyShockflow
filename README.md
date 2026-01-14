@@ -14,7 +14,7 @@
 
 * Git clone the present folder in your system
 
-* Go to the root folder and create a new python environment (pyshockflow) through toml file:
+* Go to the root folder and create a new python environment (pyshockflow) through yml file:
 ```bash
 conda env create -f environment.yml
 ```
