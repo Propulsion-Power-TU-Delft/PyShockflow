@@ -196,6 +196,6 @@ class Config:
         try:
             return int(self.config_parser.get('OUTPUT', 'OUTPUT_FREQUENCY')) 
         except:
-            return 1
+            return 250 # default value
     
     
