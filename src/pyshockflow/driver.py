@@ -501,14 +501,15 @@ class Driver:
         self.entropyFixActive = self.config.isEntropyFixActive()
         self.entropyFixCoefficient = self.config.getEntropyFixCoefficient()
         advectionScheme = self.config.getNumericalScheme()
-        high_order = self.config.getMUSCLReconstruction()
+        isMusclActive = self.config.isMusclActive()
         simulationType = self.config.getSimulationType()
+        outputFrequency = self.config.getOutputFrequency()
         
         print()
         print("="*80)
         print(" "*33 + "START SOLVER")
         print("Numerical flux method: %s" %(advectionScheme))
-        print("MUSCL reconstruction: %s" %high_order)
+        print("MUSCL reconstruction: %s" %isMusclActive)
         print("Entropy fix active: %s" %self.entropyFixActive)
         if self.config.getFluidModel()=='real':
             print("Real Gas model, library: %s" %self.config.getFluidLibrary())
@@ -545,11 +546,14 @@ class Driver:
             
             self.checkSimulationStatus(dt)
             self.setBoundaryConditions()
-            self.writeSolution(iTime, newTime)
+            
+            if iTime%outputFrequency==0:
+                self.writeSolution(iTime, newTime)
             
             time += dt  
             iTime += 1
-                
+        
+        self.writeSolution(iTime, newTime)
             
         print(" "*34 + "END SOLVER")
         print("="*80)
@@ -567,7 +571,7 @@ class Driver:
             raise ValueError(f'Limiter not recognized! Available ones are: {availableLimiters}')
         
         advectionScheme = self.config.getNumericalScheme()
-        MUSCL = self.config.getMUSCLReconstruction()
+        MUSCL = self.config.isMusclActive()
         
         # compute advection fluxes on every internal interface
         flux = np.zeros((self.nNodes+1, 3))

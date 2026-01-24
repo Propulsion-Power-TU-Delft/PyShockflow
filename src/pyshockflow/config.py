@@ -115,7 +115,7 @@ class Config:
         except:
             return "unsteady"
     
-    def getMUSCLReconstruction(self):
+    def isMusclActive(self):
         try:
             res = str(self.config_parser.get('SIMULATION', 'MUSCL_RECONSTRUCTION')).lower() 
             if res=='yes' or res=='true':
@@ -190,5 +190,12 @@ class Config:
             return float(self.config_parser.get('GEOMETRY', 'REFERENCE_AREA')) 
         except:
             return 1.0 # default
+    
+    
+    def getOutputFrequency(self):
+        try:
+            return int(self.config_parser.get('OUTPUT', 'OUTPUT_FREQUENCY')) 
+        except:
+            return 1
     
     
